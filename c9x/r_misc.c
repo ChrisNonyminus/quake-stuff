@@ -436,7 +436,7 @@ r_refdef.viewangles[2]=    0;
 	r_viewleaf = Mod_PointInLeaf (r_origin, cl.worldmodel);
 
 	r_dowarpold = r_dowarp;
-	r_dowarp = r_waterwarp.value && (r_viewleaf->contents <= CONTENTS_WATER);
+	//r_dowarp = r_waterwarp.value && (r_viewleaf->contents <= CONTENTS_WATER); // FIXME(chris): this causes a segfault in my SDL implementation
 
 	if ((r_dowarp != r_dowarpold) || r_viewchanged || lcd_x.value)
 	{

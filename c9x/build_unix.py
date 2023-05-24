@@ -15,7 +15,7 @@ GAMENAME = "QUAKE" if os.getenv("GAMENAME") is None else str(os.getenv("GAMENAME
 
 SYS_BACKEND = "SDL" if os.getenv("SYS_BACKEND") is None else str(os.getenv("SYS_BACKEND"))
 
-CFlags = [CFLAGS, f"-DQ_GAMENAME=\"{GAMENAME}\"", ' '.join(Includes)]
+CFlags = [CFLAGS, f"-DQ_GAME=\"Q_GAME_{GAMENAME}\"", ' '.join(Includes)]
 
 LDFlags = [LDFLAGS]
 

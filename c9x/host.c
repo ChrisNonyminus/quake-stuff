@@ -859,7 +859,9 @@ void Host_Init (quakeparms_t *parms)
 	Host_InitVCR (parms);
 	COM_Init (parms->basedir);
 	Host_InitLocal ();
-	W_LoadWadFile ("gfx.wad");
+#if Q_GAME == Q_GAME_QUAKE
+		W_LoadWadFile ("gfx.wad");
+#endif
 	Key_Init ();
 	Con_Init ();	
 	M_Init ();	

@@ -1,0 +1,1 @@
+gcc *.c --std=c9x -O1 -o quake-c9x -m32 -w -lm

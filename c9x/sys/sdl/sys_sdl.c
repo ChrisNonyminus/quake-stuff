@@ -163,7 +163,7 @@ void Sys_Error(char *error, ...)
     va_end(argptr);
     printf("\n");
 
-#if 0 // hacky way to cause a breakpoint... by triggering segfaults. Hey, as
+#if 1 // hacky way to cause a breakpoint... by triggering segfaults. Hey, as
       // long as it works... which it might not...
     *(int *)0 = 0;
 #endif
@@ -846,41 +846,41 @@ void Con_Printf (char *fmt, ...)
 }
 
 // TODO: Net stuff
-char	*NET_AdrToString (netadr_t a)
-{
-	static	char	s[64];
+// char	*NET_AdrToString (netadr_t a)
+// {
+// 	static	char	s[64];
 	
-	Com_sprintf (s, sizeof(s), "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
+// 	Com_sprintf (s, sizeof(s), "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
 
-	return s;
-}
-void NET_Init(void) {
+// 	return s;
+// }
+// void NET_Init(void) {
 
-}
-void		NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to) {
+// }
+// void		NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to) {
     
-}
-void		NET_Config (qboolean multiplayer) {
+// }
+// void		NET_Config (qboolean multiplayer) {
 
-}
-qboolean	NET_StringToAdr (char *s, netadr_t *a) {
-    return true;
-}
-qboolean	NET_IsLocalAddress (netadr_t adr) {
-    return true;
-}
-qboolean	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message) {
-    return false;
-}
-qboolean	NET_CompareAdr (netadr_t a, netadr_t b) {
-    return true;
-}
-qboolean	NET_CompareBaseAdr (netadr_t a, netadr_t b) {
-    return true;
-}
-void		NET_Sleep(int msec) {
-    //SDL_Delay(msec);
-}
+// }
+// qboolean	NET_StringToAdr (char *s, netadr_t *a) {
+//     return true;
+// }
+// qboolean	NET_IsLocalAddress (netadr_t adr) {
+//     return true;
+// }
+// qboolean	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message) {
+//     return true;
+// }
+// qboolean	NET_CompareAdr (netadr_t a, netadr_t b) {
+//     return true;
+// }
+// qboolean	NET_CompareBaseAdr (netadr_t a, netadr_t b) {
+//     return true;
+// }
+// void		NET_Sleep(int msec) {
+//     //SDL_Delay(msec);
+// }
 #endif
 
 // QUAKE II Sys code END
@@ -969,10 +969,9 @@ int main (int argc, char **argv)
         do {
             newtime = Sys_FloatTime ();
             time = newtime - oldtime;
-        } while (time == 0);
+        } while (0);
         Qcommon_Frame (time);
         oldtime = newtime;
     }
 }
-
 #endif

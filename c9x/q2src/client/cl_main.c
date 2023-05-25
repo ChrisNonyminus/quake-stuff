@@ -1023,6 +1023,7 @@ void CL_ReadPackets (void)
 		CL_ParseServerMessage ();
 	}
 
+
 	//
 	// check timeout
 	//

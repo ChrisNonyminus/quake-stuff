@@ -9,7 +9,7 @@ extern SDL_Surface *sdlscreen;
 extern SDL_Surface *sdlblit;
 extern SDL_Renderer *sdlrenderer;
 extern SDL_Window *sdlwindow;
-extern  SDL_Texture *sdltexture;
+SDL_Texture *texture = NULL;
 
 void		SWimp_BeginFrame( float camera_separation )
 {
@@ -18,9 +18,12 @@ void		SWimp_BeginFrame( float camera_separation )
 void		SWimp_EndFrame (void)
 {
     SDL_Surface *tmp = SDL_ConvertSurfaceFormat (sdlblit, SDL_GetWindowPixelFormat (sdlwindow), 0);
+    if (!texture) {
+        texture = SDL_CreateTextureFromSurface(sdlrenderer, tmp);
+    }
     SDL_RenderClear (sdlrenderer);
-    SDL_UpdateTexture (sdltexture, NULL, tmp->pixels, tmp->pitch);
-    SDL_RenderCopy (sdlrenderer, sdltexture, NULL, NULL);
+    SDL_UpdateTexture (texture, NULL, tmp->pixels, tmp->pitch);
+    SDL_RenderCopy (sdlrenderer, texture, NULL, NULL);
     SDL_RenderPresent (sdlrenderer);
     SDL_FreeSurface (tmp);
 
@@ -28,11 +31,21 @@ void		SWimp_EndFrame (void)
 
 int			SWimp_Init( void *hInstance, void *wndProc )
 {
-    sdltexture = SDL_CreateTextureFromSurface(sdlrenderer, sdlblit);
+    //sdltexture = SDL_CreateTextureFromSurface(sdlrenderer, sdlblit);
 }
 
 void		SWimp_SetPalette( const unsigned char *palette)
 {
+    int i;
+    SDL_Color colors[256];
+
+    for (i = 0; i < 256; ++i)
+    {
+        colors[i].r = *palette++;
+        colors[i].g = *palette++;
+        colors[i].b = *palette++;
+    }
+    SDL_SetPaletteColors(sdlblit->format->palette, colors, 0, 256);
 }
 
 void		SWimp_Shutdown( void )

@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 viddef_t vid; // global video state
 #else
 #include "r_local.h"
-viddef_t	viddef;				// global video state
+viddef_t	viddef = {640, 400};				// global video state
 
 
 extern float           surfscale;
@@ -132,8 +132,8 @@ qboolean VID_GetModeInfo( int *width, int *height, int mode )
 	// if ( mode < 0 || mode >= 1 )
 	// 	return false;
 
-	// *width  = vid_modes[mode].width;
-	// *height = vid_modes[mode].height;
+	*width  = vid.width;
+	*height = vid.height;
 
 	return true;
 }
@@ -271,6 +271,9 @@ vid.height = BASEHEIGHT;
     re = GetRefAPI(ri);
 
     re.Init(0, 0);
+
+    viddef.width = vid.width;
+    viddef.height = vid.height;
 #endif
     d_pzbuffer = zbuffer;
     surfcache = malloc(D_SurfaceCacheForRes(vid.width, vid.height));

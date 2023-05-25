@@ -15,7 +15,7 @@ SYS_BACKEND = "SDL" if os.getenv("SYS_BACKEND") is None else str(os.getenv("SYS_
 ENGINEVER = "Q1" if os.getenv("ENGINEVER") is None else str(os.getenv("ENGINEVER"))
 R_BACKEND = "SOFT" if os.getenv("R_BACKEND") is None else str(os.getenv("R_BACKEND"))
 
-Includes = [f"-I{ENGINEVER.lower()}src", f"-I{ENGINEVER.lower()}render/ref_{R_BACKEND.lower()}"]
+Includes = [f"-I{ENGINEVER.lower()}src/client",f"-I{ENGINEVER.lower()}src/server", f"-I{ENGINEVER.lower()}render/ref_{R_BACKEND.lower()}"]
 
 if os.getenv("INCLUDES") is not None:
     Includes.append(str(os.getenv("INCLUDES")))
@@ -26,9 +26,12 @@ LDFlags = [LDFLAGS]
 
 CFiles : list[str] = []
 
-for file in os.listdir(f"{ENGINEVER.lower()}src"):
+for file in os.listdir(f"{ENGINEVER.lower()}src/client"):
     if file.endswith(".c"):
-        CFiles.append(os.path.join(f"{ENGINEVER.lower()}src", file))
+        CFiles.append(os.path.join(f"{ENGINEVER.lower()}src/client", file))
+for file in os.listdir(f"{ENGINEVER.lower()}src/server"):
+    if file.endswith(".c"):
+        CFiles.append(os.path.join(f"{ENGINEVER.lower()}src/server", file))
 for file in os.listdir(f"game/{GAMENAME.lower()}"):
     if file.endswith(".c"):
         CFiles.append(os.path.join(f"game/{GAMENAME.lower()}", file))

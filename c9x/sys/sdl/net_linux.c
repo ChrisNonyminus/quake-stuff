@@ -1,4 +1,5 @@
 // net_wins.c
+#ifdef Q2
 
 #include "../qcommon/qcommon.h"
 
@@ -535,3 +536,4 @@ void NET_Sleep(int msec)
 	select(ip_sockets[NS_SERVER]+1, &fdset, NULL, NULL, &timeout);
 }
 
+#endif

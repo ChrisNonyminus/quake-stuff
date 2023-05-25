@@ -207,6 +207,361 @@ double Sys_FloatTime(void)
 char *Sys_ConsoleInput(void) { return NULL; }
 
 void Sys_Sleep(void) { SDL_Delay(1); }
+#ifdef Q2
+int mouse_oldbuttonstate = 0;
+
+extern SDL_Surface *sdlscreen;
+extern SDL_Surface *sdlblit;
+extern SDL_Renderer *sdlrenderer;
+extern SDL_Window *sdlwindow;
+#define Joystick
+
+static unsigned char KeyStates[K_LAST];
+
+void getMouse(int *x, int *y, int *state)
+{
+    *x = mouse_x;
+    *y = mouse_y;
+    *state = mouse_oldbuttonstate;
+}
+
+void doneMouse() { mouse_x = mouse_y = 0; }
+struct
+{
+    int key;
+    int down;
+} keyq[64];
+int keyq_head = 0;
+int keyq_tail = 0;
+int XLateKey(unsigned int keysym)
+{
+    int key;
+
+    key = 0;
+    switch (keysym)
+    {
+    case SDLK_KP_9:
+        key = K_KP_PGUP;
+        break;
+    case SDLK_PAGEUP:
+        key = K_PGUP;
+        break;
+
+    case SDLK_KP_3:
+        key = K_KP_PGDN;
+        break;
+    case SDLK_PAGEDOWN:
+        key = K_PGDN;
+        break;
+
+    case SDLK_KP_7:
+        key = K_KP_HOME;
+        break;
+    case SDLK_HOME:
+        key = K_HOME;
+        break;
+
+    case SDLK_KP_1:
+        key = K_KP_END;
+        break;
+    case SDLK_END:
+        key = K_END;
+        break;
+
+    case SDLK_KP_4:
+        key = K_KP_LEFTARROW;
+        break;
+    case SDLK_LEFT:
+        key = K_LEFTARROW;
+        break;
+
+    case SDLK_KP_6:
+        key = K_KP_RIGHTARROW;
+        break;
+    case SDLK_RIGHT:
+        key = K_RIGHTARROW;
+        break;
+
+    case SDLK_KP_2:
+        key = K_KP_DOWNARROW;
+        break;
+    case SDLK_DOWN:
+        key = K_DOWNARROW;
+        break;
+
+    case SDLK_KP_8:
+        key = K_KP_UPARROW;
+        break;
+    case SDLK_UP:
+        key = K_UPARROW;
+        break;
+
+    case SDLK_ESCAPE:
+        key = K_ESCAPE;
+        break;
+
+    case SDLK_KP_ENTER:
+        key = K_KP_ENTER;
+        break;
+    case SDLK_RETURN:
+        key = K_ENTER;
+        break;
+
+    case SDLK_TAB:
+        key = K_TAB;
+        break;
+
+    case SDLK_F1:
+        key = K_F1;
+        break;
+    case SDLK_F2:
+        key = K_F2;
+        break;
+    case SDLK_F3:
+        key = K_F3;
+        break;
+    case SDLK_F4:
+        key = K_F4;
+        break;
+    case SDLK_F5:
+        key = K_F5;
+        break;
+    case SDLK_F6:
+        key = K_F6;
+        break;
+    case SDLK_F7:
+        key = K_F7;
+        break;
+    case SDLK_F8:
+        key = K_F8;
+        break;
+    case SDLK_F9:
+        key = K_F9;
+        break;
+    case SDLK_F10:
+        key = K_F10;
+        break;
+    case SDLK_F11:
+        key = K_F11;
+        break;
+    case SDLK_F12:
+        key = K_F12;
+        break;
+
+    case SDLK_BACKSPACE:
+        key = K_BACKSPACE;
+        break;
+
+    case SDLK_KP_PERIOD:
+        key = K_KP_DEL;
+        break;
+    case SDLK_DELETE:
+        key = K_DEL;
+        break;
+
+    case SDLK_PAUSE:
+        key = K_PAUSE;
+        break;
+
+    case SDLK_LSHIFT:
+    case SDLK_RSHIFT:
+        key = K_SHIFT;
+        break;
+
+    case SDLK_LCTRL:
+    case SDLK_RCTRL:
+        key = K_CTRL;
+        break;
+
+    case SDLK_LGUI:
+    case SDLK_RGUI:
+    case SDLK_LALT:
+    case SDLK_RALT:
+        key = K_ALT;
+        break;
+
+    case SDLK_KP_5:
+        key = K_KP_5;
+        break;
+
+    case SDLK_INSERT:
+        key = K_INS;
+        break;
+    case SDLK_KP_0:
+        key = K_KP_INS;
+        break;
+
+    case SDLK_KP_MULTIPLY:
+        key = '*';
+        break;
+    case SDLK_KP_PLUS:
+        key = K_KP_PLUS;
+        break;
+    case SDLK_KP_MINUS:
+        key = K_KP_MINUS;
+        break;
+    case SDLK_KP_DIVIDE:
+        key = K_KP_SLASH;
+        break;
+
+    default: /* assuming that the other sdl keys are mapped to ascii */
+        if (keysym < 128)
+            key = keysym;
+        break;
+    }
+
+    return key;
+}
+void GetEvent(SDL_Event *event)
+{
+    unsigned int key;
+
+    switch (event->type)
+    {
+    case SDL_MOUSEBUTTONDOWN:
+        if (event->button.button == 4)
+        {
+            keyq[keyq_head].key = K_MWHEELUP;
+            keyq[keyq_head].down = true;
+            keyq_head = (keyq_head + 1) & 63;
+            keyq[keyq_head].key = K_MWHEELUP;
+            keyq[keyq_head].down = false;
+            keyq_head = (keyq_head + 1) & 63;
+        }
+        else if (event->button.button == 5)
+        {
+            keyq[keyq_head].key = K_MWHEELDOWN;
+            keyq[keyq_head].down = true;
+            keyq_head = (keyq_head + 1) & 63;
+            keyq[keyq_head].key = K_MWHEELDOWN;
+            keyq[keyq_head].down = false;
+            keyq_head = (keyq_head + 1) & 63;
+        }
+        break;
+    case SDL_MOUSEBUTTONUP:
+        break;
+#ifdef Joystick
+    case SDL_JOYBUTTONDOWN:
+        keyq[keyq_head].key =
+            ((((SDL_JoyButtonEvent *)event)->button < 4) ? K_JOY1 : K_AUX1) +
+            ((SDL_JoyButtonEvent *)event)->button;
+        keyq[keyq_head].down = true;
+        keyq_head = (keyq_head + 1) & 63;
+        break;
+    case SDL_JOYBUTTONUP:
+        keyq[keyq_head].key =
+            ((((SDL_JoyButtonEvent *)event)->button < 4) ? K_JOY1 : K_AUX1) +
+            ((SDL_JoyButtonEvent *)event)->button;
+        keyq[keyq_head].down = false;
+        keyq_head = (keyq_head + 1) & 63;
+        break;
+#endif
+    case SDL_KEYDOWN:
+        if (KeyStates[K_ALT] && (event->key.keysym.sym == SDLK_RETURN))
+        {
+            Uint32 win_flags = SDL_GetWindowFlags(sdlwindow);
+
+            /*
+             * There was quick fullscreen change here before (without
+             * vid_ref restart). Do not use this practice now because
+             * restarting vid_ref may set other cvars depending on
+             * fullscreen mode. Alt+Return is just a shortcut for the
+             * corresponding menu item now.
+             */
+            Cvar_SetValue("vid_fullscreen",
+                          !(win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP));
+            break; /* ignore this key */
+        }
+
+        if (KeyStates[K_CTRL] && (event->key.keysym.sym == SDLK_g))
+        {
+            SDL_bool grabbed = SDL_GetRelativeMouseMode();
+            if (grabbed == SDL_TRUE)
+            {
+                SDL_SetRelativeMouseMode(SDL_FALSE);
+                Cvar_SetValue("_windowed_mouse", 0);
+            }
+            else
+            {
+                SDL_SetRelativeMouseMode(SDL_TRUE);
+                Cvar_SetValue("_windowed_mouse", 1);
+            }
+            break; /* ignore this key */
+        }
+
+        key = XLateKey(event->key.keysym.sym);
+        if (key)
+        {
+            KeyStates[key] = 1;
+            keyq[keyq_head].key = key;
+            keyq[keyq_head].down = true;
+            keyq_head = (keyq_head + 1) & 63;
+        }
+        break;
+    case SDL_KEYUP:
+        key = XLateKey(event->key.keysym.sym);
+        if (key)
+        {
+            KeyStates[key] = 0;
+            keyq[keyq_head].key = key;
+            keyq[keyq_head].down = false;
+            keyq_head = (keyq_head + 1) & 63;
+        }
+        break;
+    case SDL_QUIT:
+        Com_Quit();
+        break;
+    }
+}
+
+#ifdef Joystick
+static SDL_Joystick *joy;
+static int joy_oldbuttonstate;
+static int joy_numbuttons;
+qboolean OpenJoystick(cvar_t *joy_dev)
+{
+    int num_joysticks, i;
+    joy = NULL;
+
+    if (!(SDL_INIT_JOYSTICK & SDL_WasInit(SDL_INIT_JOYSTICK)))
+    {
+        Con_Printf(PRINT_ALL,
+                   "SDL Joystick not initialized, trying to init...\n");
+        SDL_Init(SDL_INIT_JOYSTICK);
+    }
+    Con_Printf(PRINT_ALL, "Trying to start-up joystick...\n");
+    if ((num_joysticks = SDL_NumJoysticks()))
+    {
+        for (i = 0; i < num_joysticks; i++)
+        {
+            Con_Printf(PRINT_ALL, "Trying joystick [%s]\n",
+                       SDL_JoystickName(i));
+            // if (!SDL_JoystickOpened(i))
+            // {
+            //     joy = SDL_JoystickOpen(i);
+            //     if (joy)
+            //     {
+            //         Con_Printf(PRINT_ALL, "Joytick activated.\n");
+            //         joy_numbuttons = SDL_JoystickNumButtons(joy);
+            //         break;
+            //     }
+            // }
+        }
+        if (!joy)
+        {
+            Con_Printf(PRINT_ALL, "Failed to open any joysticks\n");
+            return false;
+        }
+    }
+    else
+    {
+        Con_Printf(PRINT_ALL, "No joysticks available\n");
+        return false;
+    }
+    return true;
+}
+#endif
+#endif
 
 void Sys_SendKeyEvents(void)
 {
@@ -217,6 +572,7 @@ void Sys_SendKeyEvents(void)
 
     while (SDL_PollEvent(&event))
     {
+#ifdef Q1
         switch (event.type)
         {
 
@@ -414,7 +770,40 @@ void Sys_SendKeyEvents(void)
         default:
             break;
         }
+#elif defined(Q2)
+        GetEvent(&event);
+#endif
     }
+
+#ifdef Q2
+    int bstate;
+    SDL_GetRelativeMouseState(&mouse_x, &mouse_y);
+    mouse_oldbuttonstate = 0;
+    bstate = SDL_GetMouseState(NULL, NULL);
+    if (SDL_BUTTON(1) & bstate)
+        mouse_oldbuttonstate |= (1 << 0);
+    if (SDL_BUTTON(3) & bstate) /* quake2 has the right button be mouse2 */
+        mouse_oldbuttonstate |= (1 << 1);
+    if (SDL_BUTTON(2) & bstate) /* quake2 has the middle button be mouse3 */
+        mouse_oldbuttonstate |= (1 << 2);
+    if (SDL_BUTTON(6) & bstate)
+        mouse_oldbuttonstate |= (1 << 3);
+    if (SDL_BUTTON(7) & bstate)
+        mouse_oldbuttonstate |= (1 << 4);
+
+    //   if (old_windowed_mouse != _windowed_mouse->value) {
+    //       old_windowed_mouse = _windowed_mouse->value;
+
+    //       if (_windowed_mouse->value) SDL_SetRelativeMouseMode (SDL_TRUE);
+    //       else SDL_SetRelativeMouseMode (SDL_FALSE);
+    //   }
+    while (keyq_head != keyq_tail)
+    {
+        Key_Event(keyq[keyq_tail].key, keyq[keyq_tail].down,
+                  Sys_Milliseconds());
+        keyq_tail = (keyq_tail + 1) & 63;
+    }
+#endif
 }
 
 void Sys_HighFPPrecision(void) {}
@@ -434,16 +823,15 @@ int Sys_Milliseconds(void)
 }
 // TODO
 #if __linux__
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include <stdio.h>
 #include <ctype.h>
 #include <dirent.h>
-#include <unistd.h>
+#include <errno.h>
+#include <stdio.h>
 #include <sys/mman.h>
+#include <sys/stat.h>
 #include <sys/time.h>
-
+#include <sys/types.h>
+#include <unistd.h>
 
 /* Like glob_match, but match PATTERN against any final segment of TEXT.  */
 static int glob_match_after_star(char *pattern, char *text)
@@ -463,7 +851,8 @@ static int glob_match_after_star(char *pattern, char *text)
     else
         c1 = c;
 
-    while (1) {
+    while (1)
+    {
         if ((c == '[' || *t == c1) && glob_match(p - 1, t))
             return 1;
         if (*t++ == '\0')
@@ -526,7 +915,8 @@ int glob_match(char *pattern, char *text)
     register char c;
 
     while ((c = *p++) != '\0')
-        switch (c) {
+        switch (c)
+        {
         case '?':
             if (*t == '\0')
                 return 0;
@@ -543,61 +933,65 @@ int glob_match(char *pattern, char *text)
             return glob_match_after_star(p, t);
 
         case '[':
+        {
+            register char c1 = *t++;
+            int invert;
+
+            if (!c1)
+                return (0);
+
+            invert = ((*p == '!') || (*p == '^'));
+            if (invert)
+                p++;
+
+            c = *p++;
+            while (1)
             {
-                register char c1 = *t++;
-                int invert;
+                register char cstart = c, cend = c;
 
-                if (!c1)
-                    return (0);
-
-                invert = ((*p == '!') || (*p == '^'));
-                if (invert)
-                    p++;
+                if (c == '\\')
+                {
+                    cstart = *p++;
+                    cend = cstart;
+                }
+                if (c == '\0')
+                    return 0;
 
                 c = *p++;
-                while (1) {
-                    register char cstart = c, cend = c;
-
-                    if (c == '\\') {
-                        cstart = *p++;
-                        cend = cstart;
-                    }
-                    if (c == '\0')
-                        return 0;
-
-                    c = *p++;
-                    if (c == '-' && *p != ']') {
+                if (c == '-' && *p != ']')
+                {
+                    cend = *p++;
+                    if (cend == '\\')
                         cend = *p++;
-                        if (cend == '\\')
-                            cend = *p++;
-                        if (cend == '\0')
-                            return 0;
-                        c = *p++;
-                    }
-                    if (c1 >= cstart && c1 <= cend)
-                        goto match;
-                    if (c == ']')
-                        break;
-                }
-                if (!invert)
-                    return 0;
-                break;
-
-              match:
-                /* Skip the rest of the [...] construct that already matched.  */
-                while (c != ']') {
-                    if (c == '\0')
+                    if (cend == '\0')
                         return 0;
                     c = *p++;
-                    if (c == '\0')
-                        return 0;
-                    else if (c == '\\')
-                        ++p;
                 }
-                if (invert)
-                    return 0;
-                break;
+                if (c1 >= cstart && c1 <= cend)
+                    goto match;
+                if (c == ']')
+                    break;
             }
+            if (!invert)
+                return 0;
+            break;
+
+        match:
+            /* Skip the rest of the [...] construct that already matched.  */
+            while (c != ']')
+            {
+                if (c == '\0')
+                    return 0;
+                c = *p++;
+                if (c == '\0')
+                    return 0;
+                else if (c == '\\')
+                    ++p;
+            }
+            if (invert)
+                return 0;
+            break;
+        }
 
         default:
             if (c != *t++)
@@ -607,15 +1001,13 @@ int glob_match(char *pattern, char *text)
     return *t == '\0';
 }
 
-void Sys_Mkdir (char *path)
-{
-    mkdir (path, 0777);
-}
+void Sys_Mkdir(char *path) { mkdir(path, 0777); }
 
-char *strlwr (char *s)
+char *strlwr(char *s)
 {
     char *p = s;
-    while (*s) {
+    while (*s)
+    {
         *s = tolower(*s);
         s++;
     }
@@ -624,18 +1016,18 @@ char *strlwr (char *s)
 
 //============================================
 
-static    char    findbase[MAX_OSPATH];
-static    char    findpath[MAX_OSPATH];
-static    char    findpattern[MAX_OSPATH];
-static    DIR        *fdir;
+static char findbase[MAX_OSPATH];
+static char findpath[MAX_OSPATH];
+static char findpattern[MAX_OSPATH];
+static DIR *fdir;
 
-static qboolean CompareAttributes(char *path, char *name,
-    unsigned musthave, unsigned canthave )
+static qboolean CompareAttributes(char *path, char *name, unsigned musthave,
+                                  unsigned canthave)
 {
     struct stat st;
     char fn[MAX_OSPATH];
 
-// . and .. never match
+    // . and .. never match
     if (strcmp(name, ".") == 0 || strcmp(name, "..") == 0)
         return false;
 
@@ -644,7 +1036,8 @@ static qboolean CompareAttributes(char *path, char *name,
     if (stat(fn, &st) == -1)
         return false; // shouldn't happen
 
-    // if ( ( st.st_mode & S_IFDIR ) && ( canthave & SFF_SUBDIR ) ) // TODO: S_IFDIR is undeclared? dafuq?
+    // if ( ( st.st_mode & S_IFDIR ) && ( canthave & SFF_SUBDIR ) ) // TODO:
+    // S_IFDIR is undeclared? dafuq?
     //     return false;
 
     // if ( ( musthave & SFF_SUBDIR ) && !( st.st_mode & S_IFDIR ) )
@@ -653,34 +1046,39 @@ static qboolean CompareAttributes(char *path, char *name,
     return true;
 }
 
-char *Sys_FindFirst (char *path, unsigned musthave, unsigned canhave)
+char *Sys_FindFirst(char *path, unsigned musthave, unsigned canhave)
 {
     struct dirent *d;
     char *p;
 
     if (fdir)
-        Sys_Error ("Sys_BeginFind without close");
+        Sys_Error("Sys_BeginFind without close");
 
-//    COM_FilePath (path, findbase);
+    //    COM_FilePath (path, findbase);
     strcpy(findbase, path);
 
-    if ((p = strrchr(findbase, '/')) != NULL) {
+    if ((p = strrchr(findbase, '/')) != NULL)
+    {
         *p = 0;
         strcpy(findpattern, p + 1);
-    } else
+    }
+    else
         strcpy(findpattern, "*");
 
     if (strcmp(findpattern, "*.*") == 0)
         strcpy(findpattern, "*");
-    
+
     if ((fdir = opendir(findbase)) == NULL)
         return NULL;
-    while ((d = readdir(fdir)) != NULL) {
-        if (!*findpattern || glob_match(findpattern, d->d_name)) {
-//            if (*findpattern)
-//                printf("%s matched %s\n", findpattern, d->d_name);
-            if (CompareAttributes(findbase, d->d_name, musthave, canhave)) {
-                sprintf (findpath, "%s/%s", findbase, d->d_name);
+    while ((d = readdir(fdir)) != NULL)
+    {
+        if (!*findpattern || glob_match(findpattern, d->d_name))
+        {
+            //            if (*findpattern)
+            //                printf("%s matched %s\n", findpattern, d->d_name);
+            if (CompareAttributes(findbase, d->d_name, musthave, canhave))
+            {
+                sprintf(findpath, "%s/%s", findbase, d->d_name);
                 return findpath;
             }
         }
@@ -688,18 +1086,21 @@ char *Sys_FindFirst (char *path, unsigned musthave, unsigned canhave)
     return NULL;
 }
 
-char *Sys_FindNext (unsigned musthave, unsigned canhave)
+char *Sys_FindNext(unsigned musthave, unsigned canhave)
 {
     struct dirent *d;
 
     if (fdir == NULL)
         return NULL;
-    while ((d = readdir(fdir)) != NULL) {
-        if (!*findpattern || glob_match(findpattern, d->d_name)) {
-//            if (*findpattern)
-//                printf("%s matched %s\n", findpattern, d->d_name);
-            if (CompareAttributes(findbase, d->d_name, musthave, canhave)) {
-                sprintf (findpath, "%s/%s", findbase, d->d_name);
+    while ((d = readdir(fdir)) != NULL)
+    {
+        if (!*findpattern || glob_match(findpattern, d->d_name))
+        {
+            //            if (*findpattern)
+            //                printf("%s matched %s\n", findpattern, d->d_name);
+            if (CompareAttributes(findbase, d->d_name, musthave, canhave))
+            {
+                sprintf(findpath, "%s/%s", findbase, d->d_name);
                 return findpath;
             }
         }
@@ -707,7 +1108,7 @@ char *Sys_FindNext (unsigned musthave, unsigned canhave)
     return NULL;
 }
 
-void Sys_FindClose (void)
+void Sys_FindClose(void)
 {
     if (fdir != NULL)
         closedir(fdir);
@@ -793,72 +1194,69 @@ void Hunk_Free(void *base)
 
 void SNDDMA_BeginPainting(void) {}
 
-void Sys_AppActivate (void)
-{
-}
+void Sys_AppActivate(void) {}
 
 #ifdef Q2
 #include "game.h"
 
-void	*Sys_GetGameAPI (void *parms)
+void *Sys_GetGameAPI(void *parms) { return GetGameAPI(parms); }
+
+void Con_Printf(char *fmt, ...)
 {
-	return GetGameAPI(parms);
-}
+    va_list argptr;
+    char msg[1024];
+    static qboolean inupdate;
 
-void Con_Printf (char *fmt, ...)
-{
-	va_list		argptr;
-	char		msg[1024];
-	static qboolean	inupdate;
-	
-	va_start (argptr,fmt);
-	vsprintf (msg,fmt,argptr);
-	va_end (argptr);
-	
-// also echo to debugging console
-	Sys_Printf ("%s", msg);	// also echo to debugging console
+    va_start(argptr, fmt);
+    vsprintf(msg, fmt, argptr);
+    va_end(argptr);
 
-// // log all messages to file
-// 	if (con_debuglog)
-// 		Con_DebugLog(va("%s/qconsole.log",com_gamedir), "%s", msg);
+    // also echo to debugging console
+    Sys_Printf("%s", msg); // also echo to debugging console
 
-// 	if (!con_initialized)
-// 		return;
-		
-// 	if (cls.state == ca_dedicated)
-// 		return;		// no graphics mode
+    // // log all messages to file
+    // 	if (con_debuglog)
+    // 		Con_DebugLog(va("%s/qconsole.log",com_gamedir), "%s", msg);
 
-// // write it to the scrollable buffer
-// 	Con_Print (msg);
-	
-// // update the screen if the console is displayed
-// 	if (cls.signon != SIGNONS && !scr_disabled_for_loading )
-// 	{
-// 	// protect against infinite loop if something in SCR_UpdateScreen calls
-// 	// Con_Printd
-// 		if (!inupdate)
-// 		{
-// 			inupdate = true;
-// 			SCR_UpdateScreen ();
-// 			inupdate = false;
-// 		}
-// 	}
+    // 	if (!con_initialized)
+    // 		return;
+
+    // 	if (cls.state == ca_dedicated)
+    // 		return;		// no graphics mode
+
+    // // write it to the scrollable buffer
+    // 	Con_Print (msg);
+
+    // // update the screen if the console is displayed
+    // 	if (cls.signon != SIGNONS && !scr_disabled_for_loading )
+    // 	{
+    // 	// protect against infinite loop if something in SCR_UpdateScreen calls
+    // 	// Con_Printd
+    // 		if (!inupdate)
+    // 		{
+    // 			inupdate = true;
+    // 			SCR_UpdateScreen ();
+    // 			inupdate = false;
+    // 		}
+    // 	}
 }
 
 // TODO: Net stuff
 // char	*NET_AdrToString (netadr_t a)
 // {
 // 	static	char	s[64];
-	
-// 	Com_sprintf (s, sizeof(s), "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
+
+// 	Com_sprintf (s, sizeof(s), "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2],
+// a.ip[3], ntohs(a.port));
 
 // 	return s;
 // }
 // void NET_Init(void) {
 
 // }
-// void		NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to) {
-    
+// void		NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to)
+// {
+
 // }
 // void		NET_Config (qboolean multiplayer) {
 
@@ -869,7 +1267,8 @@ void Con_Printf (char *fmt, ...)
 // qboolean	NET_IsLocalAddress (netadr_t adr) {
 //     return true;
 // }
-// qboolean	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message) {
+// qboolean	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t
+// *net_message) {
 //     return true;
 // }
 // qboolean	NET_CompareAdr (netadr_t a, netadr_t b) {
@@ -934,9 +1333,9 @@ void main(int argc, char **argv)
     }
 }
 #elif defined(Q2)
-int main (int argc, char **argv)
+int main(int argc, char **argv)
 {
-    float     time, oldtime, newtime;
+    float time, oldtime, newtime;
 
     if (SDL_Init(0) < 0)
     {
@@ -947,30 +1346,31 @@ int main (int argc, char **argv)
     // // go back to real user for config loads
     // saved_euid = geteuid();
     // seteuid(getuid());
-    
-    //printf ("Quake 2 -- Version %s\n", LINUX_VERSION);
+
+    // printf ("Quake 2 -- Version %s\n", LINUX_VERSION);
 
     Qcommon_Init(argc, argv);
 
-    //fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);
+    // fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);
 
     // nostdout = Cvar_Get("nostdout", "0", 0);
     // if (!nostdout->value) {
-    //     fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);    
+    //     fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);
     // }
-    oldtime = Sys_FloatTime ();
+    oldtime = Sys_FloatTime();
 
     // // test
     // SV_Map(true, "base64", true);
 
     while (1)
     {
-// find time spent rendering last frame
-        do {
-            newtime = Sys_FloatTime ();
+        // find time spent rendering last frame
+        do
+        {
+            newtime = Sys_FloatTime();
             time = newtime - oldtime;
         } while (0);
-        Qcommon_Frame (time);
+        Qcommon_Frame(time);
         oldtime = newtime;
     }
 }

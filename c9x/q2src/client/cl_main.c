@@ -1803,7 +1803,7 @@ void CL_Init (void)
 	M_Init ();	
 	
 	SCR_Init ();
-	cls.disable_screen = true;	// don't draw yet
+	cls.disable_screen = false;	// don't draw yet
 
 	//CDAudio_Init ();
 	CL_InitLocal ();

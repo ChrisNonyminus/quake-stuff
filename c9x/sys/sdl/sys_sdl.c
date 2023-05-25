@@ -421,6 +421,7 @@ void Sys_HighFPPrecision(void) {}
 
 void Sys_LowFPPrecision(void) {}
 
+#ifdef Q2
 // QUAKE II Sys code!
 void Sys_ConsoleOutput(char *string) { Sys_Printf(string); }
 
@@ -599,7 +600,7 @@ qboolean	NET_IsLocalAddress (netadr_t adr) {
     return true;
 }
 qboolean	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message) {
-    return true;
+    return false;
 }
 qboolean	NET_CompareAdr (netadr_t a, netadr_t b) {
     return true;
@@ -608,12 +609,12 @@ qboolean	NET_CompareBaseAdr (netadr_t a, netadr_t b) {
     return true;
 }
 void		NET_Sleep(int msec) {
-    SDL_Delay(msec);
+    //SDL_Delay(msec);
 }
 #endif
 
 // QUAKE II Sys code END
-
+#endif
 //=============================================================================
 
 #ifdef Q1
@@ -688,13 +689,17 @@ int main (int argc, char **argv)
     //     fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);    
     // }
     oldtime = Sys_Milliseconds ();
+
+    // test
+    SV_Map(true, "base3", true);
+
     while (1)
     {
 // find time spent rendering last frame
-        do {
-            newtime = Sys_Milliseconds ();
-            time = newtime - oldtime;
-        } while (time < 1);
+        // do {
+        //     newtime = Sys_Milliseconds ();
+        //     time = newtime - oldtime;
+        // } while (time < 1);
         Qcommon_Frame (time);
         oldtime = newtime;
     }

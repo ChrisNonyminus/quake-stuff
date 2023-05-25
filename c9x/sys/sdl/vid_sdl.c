@@ -110,15 +110,71 @@ void D_InitCaches (void *buffer, int size)
 	
 	D_ClearCacheGuard ();
 }
+
+#define	MAXPRINTMSG	4096
+void VID_Printf (int print_level, char *fmt, ...)
+{
+	va_list		argptr;
+	char		msg[MAXPRINTMSG];
+	static qboolean	inupdate;
+	
+	va_start (argptr,fmt);
+	vsprintf (msg,fmt,argptr);
+	va_end (argptr);
+
+	if (print_level == PRINT_ALL)
+		Com_Printf ("%s", msg);
+	else
+		Com_DPrintf ("%s", msg);
+}
+qboolean VID_GetModeInfo( int *width, int *height, int mode )
+{
+	// if ( mode < 0 || mode >= 1 )
+	// 	return false;
+
+	// *width  = vid_modes[mode].width;
+	// *height = vid_modes[mode].height;
+
+	return true;
+}
+
+void VID_Error (int err_level, char *fmt, ...)
+{
+	va_list		argptr;
+	char		msg[MAXPRINTMSG];
+	static qboolean	inupdate;
+	
+	va_start (argptr,fmt);
+	vsprintf (msg,fmt,argptr);
+	va_end (argptr);
+
+	Com_Error (err_level,"%s", msg);
+}
+/*
+** VID_NewWindow
+*/
+void VID_NewWindow ( int width, int height)
+{
+	viddef.width  = width;
+	viddef.height = height;
+}
+
+void	VID_MenuInit (void)
+{
+}
+
+extern refexport_t re;
+
+extern refexport_t GetRefAPI (refimport_t rimp);
 #endif
 
 #define BASEWIDTH 320 * 2
 #define BASEHEIGHT 200 * 2
 
-static SDL_Surface *sdlscreen = NULL;
-static SDL_Surface *sdlblit = NULL;
-static SDL_Renderer *sdlrenderer = NULL;
-static SDL_Window *sdlwindow = NULL;
+ SDL_Surface *sdlscreen = NULL;
+ SDL_Surface *sdlblit = NULL;
+ SDL_Renderer *sdlrenderer = NULL;
+ SDL_Window *sdlwindow = NULL;
 
 extern short *d_pzbuffer;
 
@@ -173,9 +229,12 @@ void VID_Init(
     vid.numpages = 1;
     vid.colormap = host_colormap;
     vid.fullbright = 256 - LittleLong(*((int *)vid.colormap + 2048));
+#elif defined(Q2)
+vid.width = BASEWIDTH;
+vid.height = BASEHEIGHT;
 #endif
-    sdlblit = SDL_CreateRGBSurfaceWithFormat(0, vid.width, vid.height, 8,
-                                             SDL_PIXELFORMAT_INDEX8);
+    sdlblit = SDL_CreateRGBSurface (0, vid.width, vid.height, 8, 0, 0, 0, 0);
+
     vid.buffer =
 #ifdef Q1
         vid.conbuffer =
@@ -187,6 +246,32 @@ void VID_Init(
 #endif
             BASEWIDTH;
 
+
+#ifdef Q2
+
+	refimport_t	ri;
+
+    ri.Cmd_AddCommand = Cmd_AddCommand;
+	ri.Cmd_RemoveCommand = Cmd_RemoveCommand;
+	ri.Cmd_Argc = Cmd_Argc;
+	ri.Cmd_Argv = Cmd_Argv;
+	ri.Cmd_ExecuteText = Cbuf_ExecuteText;
+	ri.Con_Printf = VID_Printf;
+	ri.Sys_Error = VID_Error;
+	ri.FS_LoadFile = FS_LoadFile;
+	ri.FS_FreeFile = FS_FreeFile;
+	ri.FS_Gamedir = FS_Gamedir;
+	ri.Cvar_Get = Cvar_Get;
+	ri.Cvar_Set = Cvar_Set;
+	ri.Cvar_SetValue = Cvar_SetValue;
+	ri.Vid_GetModeInfo = VID_GetModeInfo;
+	ri.Vid_MenuInit = VID_MenuInit;
+	ri.Vid_NewWindow = VID_NewWindow;
+
+    re = GetRefAPI(ri);
+
+    re.Init(0, 0);
+#endif
     d_pzbuffer = zbuffer;
     surfcache = malloc(D_SurfaceCacheForRes(vid.width, vid.height));
     D_InitCaches(surfcache, D_SurfaceCacheForRes(vid.width, vid.height));
@@ -199,7 +284,7 @@ void VID_Shutdown(void)
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 
-static SDL_Texture *sdltexture = NULL;
+ SDL_Texture *sdltexture = NULL;
 void VID_Update(vrect_t *rects)
 {
     SDL_Rect *sdlrects;
@@ -270,9 +355,6 @@ void D_EndDirectRect(int x, int y, int width, int height)
 }
 
 // QUAKE II stuff
-void	VID_MenuInit (void)
-{
-}
 
 void	VID_MenuDraw (void)
 {

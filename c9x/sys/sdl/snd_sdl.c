@@ -22,24 +22,33 @@
  * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
  */
 
+#ifdef Q1
 #include "quakedef.h"
+#elif defined(Q2)
+#include "../client/client.h"
+#include "../client/snd_loc.h"
+#endif
 
 #include <SDL2/SDL.h>
 
 static int	buffersize;
 
+#ifndef Q1
+volatile dma_t* shm = NULL;
+#endif
 
 static void SDLCALL paint_audio (void *unused, Uint8 *stream, int len)
 {
 	int	pos, tobufend;
 	int	len1, len2;
 
+#if 1
 	if (!shm)
 	{	/* shouldn't happen, but just in case */
 		memset(stream, 0, len);
 		return;
 	}
-
+#endif
 	pos = (shm->samplepos * (shm->samplebits / 8));
 	if (pos >= buffersize)
 		shm->samplepos = pos = 0;
@@ -84,7 +93,11 @@ qboolean SNDDMA_Init (dma_t *dma)
 
 	/* Set up the desired format */
 	desired.freq = 44100; // or any other value you want to set as the frequency
+#ifdef Q1
 	desired.format = (loadas8bit.value) ? AUDIO_U8 : AUDIO_S16SYS;
+#else
+	desired.format = AUDIO_U8;
+#endif
 	desired.channels = 2; /* = desired_channels; */
 	if (desired.freq <= 11025)
 		desired.samples = 256;
@@ -108,8 +121,9 @@ qboolean SNDDMA_Init (dma_t *dma)
 	}
 
 	memset ((void *) dma, 0, sizeof(dma_t));
+#if 1
 	shm = dma;
-
+#endif
 	/* Fill the audio DMA information block */
 	/* Since we passed NULL as the 'obtained' spec to SDL_OpenAudio(),
 	 * SDL will convert to hardware format for us if needed, hence we
@@ -148,6 +162,7 @@ qboolean SNDDMA_Init (dma_t *dma)
 	buffersize = shm->samples * (shm->samplebits / 8);
 	Con_Printf ("SDL audio driver: %s, %d bytes buffer\n", drivername, buffersize);
 
+#if 1
 	shm->buffer = (unsigned char *) calloc (1, buffersize);
 	if (!shm->buffer)
 	{
@@ -157,6 +172,7 @@ qboolean SNDDMA_Init (dma_t *dma)
 		Con_Printf ("Failed allocating memory for SDL audio\n");
 		return false;
 	}
+#endif
 
 	SDL_PauseAudio(0);
 
@@ -170,15 +186,19 @@ int SNDDMA_GetDMAPos (void)
 
 void SNDDMA_Shutdown (void)
 {
+#if 1
 	if (shm)
+#endif
 	{
 		Con_Printf ("Shutting down SDL sound\n");
 		SDL_CloseAudio();
 		SDL_QuitSubSystem(SDL_INIT_AUDIO);
+#if 1
 		if (shm->buffer)
 			free (shm->buffer);
 		shm->buffer = NULL;
 		shm = NULL;
+#endif
 	}
 }
 

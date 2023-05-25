@@ -18,7 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 // snd_dma.c -- main control for any streaming sound output device
-
+#ifdef Q1
 #include "quakedef.h"
 
 #ifdef _WIN32
@@ -1016,3 +1016,4 @@ void S_EndPrecaching (void)
 {
 }
 
+#endif

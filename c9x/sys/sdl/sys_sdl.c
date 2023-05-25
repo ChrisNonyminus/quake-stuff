@@ -23,7 +23,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <sys/time.h>
 
 #include "errno.h"
+#ifdef Q1
 #include "quakedef.h"
+#elif defined(Q2)
+#include "../client/client.h"
+extern viddef_t vid;
+#endif
 
 double mouse_x, mouse_y;
 
@@ -373,7 +378,12 @@ void Sys_SendKeyEvents(void)
             // just force it to 0
             if (sym > 255)
                 sym = 0;
-            Key_Event(sym, state);
+            Key_Event(sym, state
+#ifdef Q2
+                      ,
+                      0
+#endif
+            );
             break;
 
         case SDL_MOUSEMOTION:
@@ -411,6 +421,7 @@ void Sys_LowFPPrecision(void) {}
 
 void main(int argc, char **argv)
 {
+#ifdef Q1
     static quakeparms_t parms;
     double time, oldtime, newtime;
 
@@ -452,4 +463,7 @@ void main(int argc, char **argv)
             oldtime += time;
         Host_Frame(time);
     }
+#elif defined(Q2)
+// TODO
+#endif
 }

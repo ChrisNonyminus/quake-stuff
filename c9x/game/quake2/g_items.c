@@ -40,17 +40,17 @@ gitem_armor_t jacketarmor_info	= { 25,  50, .30, .00, ARMOR_JACKET};
 gitem_armor_t combatarmor_info	= { 50, 100, .60, .30, ARMOR_COMBAT};
 gitem_armor_t bodyarmor_info	= {100, 200, .80, .60, ARMOR_BODY};
 
-static int	jacket_armor_index;
-static int	combat_armor_index;
-static int	body_armor_index;
-static int	power_screen_index;
-static int	power_shield_index;
+int	jacket_armor_index;
+int	combat_armor_index;
+int	body_armor_index;
+int	power_screen_index;
+int	power_shield_index;
 
 #define HEALTH_IGNORE_MAX	1
 #define HEALTH_TIMED		2
 
 void Use_Quad (edict_t *ent, gitem_t *item);
-static int	quad_drop_timeout_hack;
+int	quad_drop_timeout_hack;
 
 //======================================================================
 
@@ -822,7 +822,7 @@ void Touch_Item (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf
 
 //======================================================================
 
-static void drop_temp_touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
+void drop_temp_touch (edict_t *ent, edict_t *other, cplane_t *plane, csurface_t *surf)
 {
 	if (other == ent->owner)
 		return;
@@ -830,7 +830,7 @@ static void drop_temp_touch (edict_t *ent, edict_t *other, cplane_t *plane, csur
 	Touch_Item (ent, other, plane, surf);
 }
 
-static void drop_make_touchable (edict_t *ent)
+void drop_make_touchable (edict_t *ent)
 {
 	ent->touch = Touch_Item;
 	if (deathmatch->value)

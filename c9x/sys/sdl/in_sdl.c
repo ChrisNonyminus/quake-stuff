@@ -18,6 +18,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
 // in_null.c -- for systems without a mouse
+#ifdef Q1
 #include <SDL2/SDL.h>
 #include "quakedef.h"
 extern double mouse_x, mouse_y;
@@ -81,3 +82,4 @@ void IN_Move (usercmd_t *cmd)
     mouse_x = mouse_y = 0.0;
 }
 
+#endif

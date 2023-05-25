@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 
 CC = "cc" if os.getenv("CC") is None else str(os.getenv("CC"))
 LD = "cc" if os.getenv("LD") is None else str(os.getenv("LD"))
@@ -48,6 +49,21 @@ def compile_c(c_file):
 def link():
     if os.system(f"{LD} {' '.join(OFiles)} -o {GAMENAME.lower()}-c9x {' '.join(LDFlags)} ") != 0:
         exit(1)
+
+
+parser = argparse.ArgumentParser(description='Build Script')
+parser.add_argument('--clean', action='store_true', help='Clean the build directory')
+
+args = parser.parse_args()
+
+def clean():
+    for file in OFiles:
+        os.remove(file)
+    os.remove(f"{GAMENAME.lower()}-c9x")
+
+if args.clean:
+    clean()
+    exit(0)
 
 for file in CFiles:
     compile_c(file)

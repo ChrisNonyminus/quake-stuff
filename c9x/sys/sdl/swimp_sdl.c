@@ -39,11 +39,15 @@ void		SWimp_SetPalette( const unsigned char *palette)
     int i;
     SDL_Color colors[256];
 
-    for (i = 0; i < 256; ++i)
-    {
-        colors[i].r = *palette++;
-        colors[i].g = *palette++;
-        colors[i].b = *palette++;
+
+    if ( !palette )
+            palette = ( const unsigned char * ) sw_state.currentpalette;
+
+    for (i = 0; i < 256; i++) {
+        colors[i].r = palette[i*4+0];
+        colors[i].g = palette[i*4+1];
+        colors[i].b = palette[i*4+2];
+        colors[i].a = 255; // Opaque
     }
     SDL_SetPaletteColors(sdlblit->format->palette, colors, 0, 256);
 }

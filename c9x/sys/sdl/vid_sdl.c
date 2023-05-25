@@ -32,7 +32,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 viddef_t vid; // global video state
 #else
 #include "r_local.h"
-viddef_t	viddef = {640, 400};				// global video state
+viddef_t	viddef = {800, 600};				// global video state
 
 
 extern float           surfscale;
@@ -168,8 +168,8 @@ extern refexport_t re;
 extern refexport_t GetRefAPI (refimport_t rimp);
 #endif
 
-#define BASEWIDTH 320 * 2
-#define BASEHEIGHT 200 * 2
+#define BASEWIDTH 800
+#define BASEHEIGHT 600
 
  SDL_Surface *sdlscreen = NULL;
  SDL_Surface *sdlblit = NULL;

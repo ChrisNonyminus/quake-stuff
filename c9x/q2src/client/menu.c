@@ -1013,7 +1013,7 @@ CONTROLS MENU
 =======================================================================
 */
 static cvar_t *win_noalttab;
-cvar_t *in_joystick;
+extern cvar_t *in_joystick;
 
 static menuframework_s	s_options_menu;
 static menuaction_s		s_options_defaults_action;

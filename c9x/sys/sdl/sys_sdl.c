@@ -894,7 +894,7 @@ void main(int argc, char **argv)
     static quakeparms_t parms;
     double time, oldtime, newtime;
 
-    if (SDL_Init(0) < 0)
+    if (SDL_Init(SDL_INIT_AUDIO) < 0)
     {
         printf("Error initializing SDL: %s\n", SDL_GetError());
         return 1;

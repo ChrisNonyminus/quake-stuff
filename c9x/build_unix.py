@@ -5,9 +5,9 @@ import argparse
 CC = "cc" if os.getenv("CC") is None else str(os.getenv("CC"))
 LD = "cc" if os.getenv("LD") is None else str(os.getenv("LD"))
 CFLAGS = (
-    "-O1 -g -w --std=c9x" if os.getenv("CFLAGS") is None else str(os.getenv("CFLAGS"))
+    "-O1 -g -w --std=c9x -m32" if os.getenv("CFLAGS") is None else str(os.getenv("CFLAGS"))
 )
-LDFLAGS = "-lm -lSDL2 -g" if os.getenv("LDFLAGS") is None else str(os.getenv("LDFLAGS"))
+LDFLAGS = "-lm -lSDL2 -g -m32" if os.getenv("LDFLAGS") is None else str(os.getenv("LDFLAGS"))
 
 
 GAMENAME = "QUAKE" if os.getenv("GAMENAME") is None else str(os.getenv("GAMENAME"))
@@ -25,6 +25,7 @@ Includes = [
     f"-I{ENGINEVER.lower()}src/server",
     f"-I{ENGINEVER.lower()}src/qcommon",
     f"-I{ENGINEVER.lower()}render/ref_{R_BACKEND.lower()}",
+    f"-Igame/{GAMENAME.lower()}",
 ]
 
 if os.getenv("INCLUDES") is not None:

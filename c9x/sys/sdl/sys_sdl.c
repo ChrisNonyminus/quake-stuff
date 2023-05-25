@@ -403,9 +403,13 @@ void Sys_SendKeyEvents(void)
             break;
 
         case SDL_QUIT:
+#ifdef Q1
             CL_Disconnect();
             Host_ShutdownServer(false);
             Sys_Quit();
+#elif defined(Q2)
+            Com_Quit();
+#endif
             break;
         default:
             break;
@@ -417,11 +421,205 @@ void Sys_HighFPPrecision(void) {}
 
 void Sys_LowFPPrecision(void) {}
 
+// QUAKE II Sys code!
+void Sys_ConsoleOutput(char *string) { Sys_Printf(string); }
+
+void Sys_Init(void) {}
+int curtime;
+int Sys_Milliseconds(void)
+{
+    curtime = Sys_FloatTime();
+    return curtime;
+}
+// TODO
+void Sys_Mkdir(char *path) {}
+
+char *Sys_FindFirst(char *path, unsigned musthave, unsigned canthave)
+{
+    return NULL;
+}
+
+char *Sys_FindNext(unsigned musthave, unsigned canthave) { return NULL; }
+
+void Sys_FindClose(void) {}
+
+char *Sys_GetClipboardData(void) { return NULL; }
+
+int hunkcount;
+
+byte *membase;
+int hunkmaxsize;
+int cursize;
+void *Hunk_Begin(int maxsize)
+{
+    // reserve a huge chunk of memory, but don't commit any yet
+    cursize = 0;
+    hunkmaxsize = maxsize;
+#if 0
+	membase = VirtualAlloc (NULL, maxsize, MEM_RESERVE, PAGE_NOACCESS);
+#else
+    membase = malloc(maxsize);
+    memset(membase, 0, maxsize);
+#endif
+    if (!membase)
+        Sys_Error("VirtualAlloc reserve failed");
+    return (void *)membase;
+}
+
+void *Hunk_Alloc(int size)
+{
+    void *buf;
+
+    // round to cacheline
+    size = (size + 31) & ~31;
+
+#if 0
+	// commit pages as needed
+//	buf = VirtualAlloc (membase+cursize, size, MEM_COMMIT, PAGE_READWRITE);
+	buf = VirtualAlloc (membase, cursize+size, MEM_COMMIT, PAGE_READWRITE);
+	if (!buf)
+	{
+		FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM, NULL, GetLastError(), MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) &buf, 0, NULL);
+		Sys_Error ("VirtualAlloc commit failed.\n%s", buf);
+	}
+#endif
+    cursize += size;
+    if (cursize > hunkmaxsize)
+        Sys_Error("Hunk_Alloc overflow");
+
+    return (void *)(membase + cursize - size);
+}
+
+int Hunk_End(void)
+{
+
+    // free the remaining unused virtual memory
+#if 0
+	void	*buf;
+
+	// write protect it
+	buf = VirtualAlloc (membase, cursize, MEM_COMMIT, PAGE_READONLY);
+	if (!buf)
+		Sys_Error ("VirtualAlloc commit failed");
+#endif
+
+    hunkcount++;
+    // Com_Printf ("hunkcount: %i\n", hunkcount);
+    return cursize;
+}
+
+void Hunk_Free(void *base)
+{
+    if (base)
+#if 0
+		VirtualFree (base, 0, MEM_RELEASE);
+#else
+        free(base);
+#endif
+
+    hunkcount--;
+}
+
+void SNDDMA_BeginPainting(void) {}
+
+void Sys_AppActivate (void)
+{
+}
+
+#ifdef Q2
+#include "game.h"
+
+void	*Sys_GetGameAPI (void *parms)
+{
+	return GetGameAPI(parms);
+}
+
+void Con_Printf (char *fmt, ...)
+{
+	va_list		argptr;
+	char		msg[1024];
+	static qboolean	inupdate;
+	
+	va_start (argptr,fmt);
+	vsprintf (msg,fmt,argptr);
+	va_end (argptr);
+	
+// also echo to debugging console
+	Sys_Printf ("%s", msg);	// also echo to debugging console
+
+// // log all messages to file
+// 	if (con_debuglog)
+// 		Con_DebugLog(va("%s/qconsole.log",com_gamedir), "%s", msg);
+
+// 	if (!con_initialized)
+// 		return;
+		
+// 	if (cls.state == ca_dedicated)
+// 		return;		// no graphics mode
+
+// // write it to the scrollable buffer
+// 	Con_Print (msg);
+	
+// // update the screen if the console is displayed
+// 	if (cls.signon != SIGNONS && !scr_disabled_for_loading )
+// 	{
+// 	// protect against infinite loop if something in SCR_UpdateScreen calls
+// 	// Con_Printd
+// 		if (!inupdate)
+// 		{
+// 			inupdate = true;
+// 			SCR_UpdateScreen ();
+// 			inupdate = false;
+// 		}
+// 	}
+}
+
+// TODO: Net stuff
+char	*NET_AdrToString (netadr_t a)
+{
+	static	char	s[64];
+	
+	Com_sprintf (s, sizeof(s), "%i.%i.%i.%i:%i", a.ip[0], a.ip[1], a.ip[2], a.ip[3], ntohs(a.port));
+
+	return s;
+}
+void NET_Init(void) {
+
+}
+void		NET_SendPacket (netsrc_t sock, int length, void *data, netadr_t to) {
+    
+}
+void		NET_Config (qboolean multiplayer) {
+
+}
+qboolean	NET_StringToAdr (char *s, netadr_t *a) {
+    return true;
+}
+qboolean	NET_IsLocalAddress (netadr_t adr) {
+    return true;
+}
+qboolean	NET_GetPacket (netsrc_t sock, netadr_t *net_from, sizebuf_t *net_message) {
+    return true;
+}
+qboolean	NET_CompareAdr (netadr_t a, netadr_t b) {
+    return true;
+}
+qboolean	NET_CompareBaseAdr (netadr_t a, netadr_t b) {
+    return true;
+}
+void		NET_Sleep(int msec) {
+    SDL_Delay(msec);
+}
+#endif
+
+// QUAKE II Sys code END
+
 //=============================================================================
+
+#ifdef Q1
 
 void main(int argc, char **argv)
 {
-#ifdef Q1
     static quakeparms_t parms;
     double time, oldtime, newtime;
 
@@ -463,7 +661,43 @@ void main(int argc, char **argv)
             oldtime += time;
         Host_Frame(time);
     }
-#elif defined(Q2)
-// TODO
-#endif
 }
+#elif defined(Q2)
+int main (int argc, char **argv)
+{
+    int     time, oldtime, newtime;
+
+    if (SDL_Init(0) < 0)
+    {
+        printf("Error initializing SDL: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    // // go back to real user for config loads
+    // saved_euid = geteuid();
+    // seteuid(getuid());
+    
+    //printf ("Quake 2 -- Version %s\n", LINUX_VERSION);
+
+    Qcommon_Init(argc, argv);
+
+    //fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);
+
+    // nostdout = Cvar_Get("nostdout", "0", 0);
+    // if (!nostdout->value) {
+    //     fcntl(0, F_SETFL, fcntl (0, F_GETFL, 0) | FNDELAY);    
+    // }
+    oldtime = Sys_Milliseconds ();
+    while (1)
+    {
+// find time spent rendering last frame
+        do {
+            newtime = Sys_Milliseconds ();
+            time = newtime - oldtime;
+        } while (time < 1);
+        Qcommon_Frame (time);
+        oldtime = newtime;
+    }
+}
+
+#endif

@@ -307,7 +307,7 @@ void SV_ShutdownGameProgs (void)
 	if (!ge)
 		return;
 	ge->Shutdown ();
-	Sys_UnloadGame ();
+	//Sys_UnloadGame ();
 	ge = NULL;
 }
 

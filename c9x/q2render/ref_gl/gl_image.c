@@ -29,7 +29,7 @@ static unsigned char gammatable[256];
 
 cvar_t		*intensity;
 
-unsigned	d_8to24table[256];
+extern unsigned	d_8to24table[256];
 
 qboolean GL_Upload8 (byte *data, int width, int height,  qboolean mipmap, qboolean is_sky );
 qboolean GL_Upload32 (unsigned *data, int width, int height,  qboolean mipmap);

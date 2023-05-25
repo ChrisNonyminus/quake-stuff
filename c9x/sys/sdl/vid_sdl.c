@@ -33,6 +33,83 @@ viddef_t vid; // global video state
 #else
 #include "r_local.h"
 viddef_t	viddef;				// global video state
+
+
+extern float           surfscale;
+extern qboolean        r_cache_thrash;         // set if surface cache is thrashing
+
+extern int                                     sc_size;
+extern surfcache_t                     *sc_rover, *sc_base;
+
+#define GUARDSIZE       4
+
+#define SURFCACHE_SIZE_AT_320X200	600*1024
+
+int     D_SurfaceCacheForRes (int width, int height)
+{
+	int             size, pix;
+
+	if (COM_CheckParm ("-surfcachesize"))
+	{
+		// size = Q_atoi(com_argv[COM_CheckParm("-surfcachesize")+1]) * 1024;
+        size = 0;
+		return size;
+	}
+	
+	size = SURFCACHE_SIZE_AT_320X200;
+
+	pix = width*height;
+	if (pix > 64000)
+		size += (pix-64000)*3;
+		
+
+	return size;
+}
+
+void D_CheckCacheGuard (void)
+{
+	byte    *s;
+	int             i;
+
+	s = (byte *)sc_base + sc_size;
+	for (i=0 ; i<GUARDSIZE ; i++)
+		if (s[i] != (byte)i)
+			Sys_Error ("D_CheckCacheGuard: failed");
+}
+
+void D_ClearCacheGuard (void)
+{
+	byte    *s;
+	int             i;
+	
+	s = (byte *)sc_base + sc_size;
+	for (i=0 ; i<GUARDSIZE ; i++)
+		s[i] = (byte)i;
+}
+
+
+/*
+================
+D_InitCaches
+
+================
+*/
+void D_InitCaches (void *buffer, int size)
+{
+
+	if (1)
+		Con_Printf ("%ik surface cache\n", size/1024);
+
+	sc_size = size - GUARDSIZE;
+	sc_base = (surfcache_t *)buffer;
+	sc_rover = sc_base;
+	
+	sc_base->next = NULL;
+	sc_base->owner = NULL;
+	sc_base->size = sc_size;
+	
+	D_ClearCacheGuard ();
+}
 #endif
 
 #define BASEWIDTH 320 * 2
@@ -191,3 +268,19 @@ void D_EndDirectRect(int x, int y, int width, int height)
     SDL_RenderCopy(sdlrenderer, sdltexture, NULL, NULL);
     SDL_RenderPresent(sdlrenderer);
 }
+
+// QUAKE II stuff
+void	VID_MenuInit (void)
+{
+}
+
+void	VID_MenuDraw (void)
+{
+}
+
+const char *VID_MenuKey( int k)
+{
+	return NULL;
+}
+
+// END QUAKE II

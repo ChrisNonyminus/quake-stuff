@@ -40,11 +40,11 @@ cvar_t	*fraglimit;
 cvar_t	*timelimit;
 cvar_t	*password;
 cvar_t	*spectator_password;
-cvar_t	*maxclients;
+//cvar_t	*maxclients;
 cvar_t	*maxspectators;
 cvar_t	*maxentities;
 cvar_t	*g_select_empty;
-cvar_t	*dedicated;
+//cvar_t	*dedicated;
 
 cvar_t	*filterban;
 

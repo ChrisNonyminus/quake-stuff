@@ -367,7 +367,7 @@ void FS_Read (void *buffer, int len, FILE *f)
 			if (!tries)
 			{
 				tries = 1;
-				CDAudio_Stop();
+				//CDAudio_Stop();
 			}
 			else
 				Com_Error (ERR_FATAL, "FS_Read: 0 bytes read");

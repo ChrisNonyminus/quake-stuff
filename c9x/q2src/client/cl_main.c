@@ -94,6 +94,8 @@ centity_t		cl_entities[MAX_EDICTS];
 
 entity_state_t	cl_parse_entities[MAX_PARSE_ENTITIES];
 
+refexport_t re;
+
 extern	cvar_t *allow_download;
 extern	cvar_t *allow_download_players;
 extern	cvar_t *allow_download_models;
@@ -1723,7 +1725,7 @@ void CL_Frame (int msec)
 	CL_PredictMovement ();
 
 	// allow rendering DLL change
-	VID_CheckChanges ();
+	//VID_CheckChanges ();
 	if (!cl.refresh_prepped && cls.state == ca_active)
 		CL_PrepRefresh ();
 
@@ -1737,7 +1739,7 @@ void CL_Frame (int msec)
 	// update audio
 	S_Update (cl.refdef.vieworg, cl.v_forward, cl.v_right, cl.v_up);
 	
-	CDAudio_Update();
+	//CDAudio_Update();
 
 	// advance local effects for next frame
 	CL_RunDLights ();
@@ -1803,7 +1805,7 @@ void CL_Init (void)
 	SCR_Init ();
 	cls.disable_screen = true;	// don't draw yet
 
-	CDAudio_Init ();
+	//CDAudio_Init ();
 	CL_InitLocal ();
 	IN_Init ();
 
@@ -1835,7 +1837,7 @@ void CL_Shutdown(void)
 
 	CL_WriteConfiguration (); 
 
-	CDAudio_Shutdown ();
+	//CDAudio_Shutdown ();
 	S_Shutdown();
 	IN_Shutdown ();
 	VID_Shutdown();

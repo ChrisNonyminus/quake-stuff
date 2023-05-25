@@ -7,14 +7,18 @@ LD = "cc" if os.getenv("LD") is None else str(os.getenv("LD"))
 CFLAGS = "-O1 -g -w --std=c9x" if os.getenv("CFLAGS") is None else str(os.getenv("CFLAGS"))
 LDFLAGS = "-lm -lSDL2 -g" if os.getenv("LDFLAGS") is None else str(os.getenv("LDFLAGS"))
 
-Includes = ["-I."]
-
-if os.getenv("INCLUDES") is not None:
-    Includes.append(str(os.getenv("INCLUDES")))
 
 GAMENAME = "QUAKE" if os.getenv("GAMENAME") is None else str(os.getenv("GAMENAME"))
 
 SYS_BACKEND = "SDL" if os.getenv("SYS_BACKEND") is None else str(os.getenv("SYS_BACKEND"))
+
+ENGINEVER = "Q1" if os.getenv("ENGINEVER") is None else str(os.getenv("ENGINEVER"))
+R_BACKEND = "SOFT" if os.getenv("R_BACKEND") is None else str(os.getenv("R_BACKEND"))
+
+Includes = ["-I.", f"-I{ENGINEVER.lower()}render/ref_{R_BACKEND.lower()}"]
+
+if os.getenv("INCLUDES") is not None:
+    Includes.append(str(os.getenv("INCLUDES")))
 
 CFlags = [CFLAGS, f"-DQ_GAME=\"Q_GAME_{GAMENAME}\"", ' '.join(Includes)]
 
@@ -31,6 +35,9 @@ for file in os.listdir(f"game/{GAMENAME.lower()}"):
 for file in os.listdir(f"sys/{SYS_BACKEND.lower()}"):
     if file.endswith(".c"):
         CFiles.append(os.path.join(f"sys/{SYS_BACKEND.lower()}", file))
+for file in os.listdir(f"{ENGINEVER.lower()}render/ref_{R_BACKEND.lower()}"):
+    if file.endswith(".c"):
+        CFiles.append(os.path.join(f"{ENGINEVER.lower()}render/ref_{R_BACKEND.lower()}", file))
 
 OFiles : list[str] = []
 

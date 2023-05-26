@@ -77,12 +77,6 @@ typedef struct entity_s
 
 #define ENTITY_FLAGS  68
 
-typedef struct
-{
-	vec3_t	origin;
-	vec3_t	color;
-	float	intensity;
-} dlight_t;
 
 typedef struct
 {
@@ -91,11 +85,20 @@ typedef struct
 	float	alpha;
 } particle_t;
 
+
 typedef struct
 {
 	float		rgb[3];			// 0.0 - 2.0
 	float		white;			// highest of rgb
 } lightstyle_t;
+
+
+typedef struct
+{
+	vec3_t	origin;
+	vec3_t	color;
+	float	intensity;
+} dlight_t;
 
 typedef struct
 {

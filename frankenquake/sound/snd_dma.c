@@ -169,7 +169,7 @@ void S_Init (void)
 
 	Con_Printf("\nSound Initialization\n");
 
-	if (COM_CheckParm("-nosound"))
+	//if (COM_CheckParm("-nosound"))
 		return;
 
 	if (COM_CheckParm("-simsound"))

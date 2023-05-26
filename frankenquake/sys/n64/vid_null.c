@@ -23,14 +23,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <SDL.h>
 
-#include <libdragon.h>
-
 #include "quakedef.h"
 
 extern viddef_t vid; // global video state
 
-#define BASEWIDTH 640
-#define BASEHEIGHT 480
+#define BASEWIDTH 320
+#define BASEHEIGHT 240
 
 static SDL_Surface *sdlscreen = NULL;
 static SDL_Surface *sdlblit = NULL;
@@ -79,8 +77,6 @@ void VID_Init(unsigned char *palette)
 	SDL_RendererInfo rendererInfo;
 	if (!SDL_GetRendererInfo(sdlrenderer, &rendererInfo))
 		printf("Using SDL renderer: %s\n", rendererInfo.name);
-	SDL_SetRenderDrawColor(sdlrenderer, 0, 0, 0, 255);
-	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "nearest");
     sdlscreen = SDL_GetWindowSurface(sdlwindow);
     vid.maxwarpwidth = vid.width = vid.conwidth = BASEWIDTH;
     vid.maxwarpheight = vid.height = vid.conheight = BASEHEIGHT;
@@ -105,7 +101,8 @@ void VID_Shutdown(void)
     SDL_DestroyWindow(sdlwindow);
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
-
+void Hunk_Print (qboolean all);
+static SDL_Texture* sdltexture = NULL;
 void VID_Update(vrect_t *rects)
 {
     SDL_Rect *sdlrects;
@@ -131,13 +128,10 @@ void VID_Update(vrect_t *rects)
         sdlrects[i].h = rect->height;
         ++i;
     }
-    surface_t *disp = display_get();
-    rdpq_attach(disp, NULL);
-
-    surface_t temp = surface_make_linear(sdlblit->pixels, FMT_CI8, 320, 240);
-    rdpq_tex_blit(&temp, 0, 0, NULL);
-
-    rdpq_detach_show();
+    //Hunk_Print(true);
+    sdltexture = SDL_CreateTextureFromSurface(sdlrenderer, sdlblit);
+	SDL_RenderCopy(sdlrenderer, sdltexture, NULL, sdlrects);
+	SDL_DestroyTexture(sdltexture);
     SDL_RenderPresent(sdlrenderer);
 }
 
@@ -175,12 +169,8 @@ void D_EndDirectRect(int x, int y, int width, int height)
         return;
     }
 	//SDL_RenderClear(sdlrenderer);
-	surface_t *disp = display_get();
-    rdpq_attach(disp, NULL);
-
-    surface_t temp = surface_make_linear(sdlblit->pixels, FMT_CI8, 320, 240);
-    rdpq_tex_blit(&temp, 0, 0, NULL);
-
-    rdpq_detach_show();
+    sdltexture = SDL_CreateTextureFromSurface(sdlrenderer, sdlblit);
+	SDL_RenderCopy(sdlrenderer, sdltexture, NULL, NULL);
+	SDL_DestroyTexture(sdltexture);
     SDL_RenderPresent(sdlrenderer);
 }

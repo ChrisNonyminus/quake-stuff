@@ -153,7 +153,6 @@ void Sys_MakeCodeWriteable(unsigned long startaddr, unsigned long length) {}
 void Sys_Error(char *error, ...)
 {
     va_list argptr;
-    SDL_Quit();
 
     printf("Sys_Error: ");
     va_start(argptr, error);
@@ -161,7 +160,7 @@ void Sys_Error(char *error, ...)
     va_end(argptr);
     printf("\n");
 
-#if 1 // hacky way to cause a breakpoint... by triggering segfaults. Hey, as
+#if 0 // hacky way to cause a breakpoint... by triggering segfaults. Hey, as
       // long as it works... which it might not...
     *(int *)0 = 0;
 #endif
@@ -419,9 +418,9 @@ int main(int argc, char **argv)
 
 
 
-
-    console_init();
-	console_set_render_mode(RENDER_AUTOMATIC);
+    debug_init(DEBUG_FEATURE_ALL);
+    // console_init();
+	// console_set_render_mode(RENDER_AUTOMATIC);
     int ret = dfs_init(DFS_DEFAULT_LOCATION);
 	assert(ret == DFS_ESUCCESS);
 
@@ -431,7 +430,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    parms.memsize = 512 * 1024;
+    parms.memsize = 3 * 1024 * 1024;
     parms.membase = malloc(parms.memsize);
     //COM_AddGameDirectory("sd:/quake");
 

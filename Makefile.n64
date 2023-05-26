@@ -2,7 +2,6 @@ V=1
 SOURCE_DIR=frankenquake
 BUILD_DIR=frankenquake/sys/n64/build
 include $(N64_INST)/include/n64.mk
-SDL2_BPP = DEPTH_32_BPP
 include libs/sdl_n64/SDL2/Makefile_sdl2.mk
 
 SOURCES := frankenquake/client frankenquake/console frankenquake/misc frankenquake/misc frankenquake/network frankenquake/progs frankenquake/qcommon frankenquake/render/ref_soft frankenquake/server frankenquake/sound frankenquake/sys/n64
@@ -30,6 +29,8 @@ $(BUILD_DIR)/quake.elf: $(OBJS)
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -f *.z64
+	find . -name '*.o' -delete
+	find . -name '*.d' -delete
 .PHONY: clean
 
 -include $(wildcard $(BUILD_DIR)/*.d)

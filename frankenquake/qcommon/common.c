@@ -1605,7 +1605,7 @@ byte *COM_LoadStackFile (char *path, void *buffer, int bufsize)
 	
 	return buf;
 }
-
+void Hunk_Print(qboolean all);
 /*
 =================
 COM_LoadPackFile
@@ -1673,7 +1673,9 @@ pack_t *COM_LoadPackFile (char *packfile)
 	pack->numfiles = numpackfiles;
 	pack->files = newfiles;
 	
-	Con_Printf ("Added packfile %s (%i files)\n", packfile, numpackfiles);
+	Con_Printf ("\nAdded packfile %s (%i files)\n", packfile, numpackfiles);
+
+	//Hunk_Print(true);
 	return pack;
 }
 

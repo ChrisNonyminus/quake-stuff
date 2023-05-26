@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 project(frankenquake)
 
-option(USE_SDL "use SDL2" OFF)
+option(USE_SDL "use SDL2" ON)
 set(GAME_NAME "quake")
 
 if (USE_SDL)

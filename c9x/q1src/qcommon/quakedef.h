@@ -80,7 +80,7 @@ void	VID_UnlockBuffer (void);
 
 #define UNUSED(x)	(x = x)	// for pesky compiler / lint warnings
 
-#define	MINIMUM_MEMORY			0x600000
+#define	MINIMUM_MEMORY			0x400000
 #define	MINIMUM_MEMORY_LEVELPAK	(MINIMUM_MEMORY + 0x100000)
 
 #define MAX_NUM_ARGVS	50

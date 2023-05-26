@@ -45,7 +45,7 @@ qboolean		snd_initialized = false;
 
 // pointer should go away
 volatile dma_t  *shm = 0;
-volatile dma_t sn;
+dma_t sn;
 
 vec3_t		listener_origin;
 vec3_t		listener_forward;
@@ -398,10 +398,10 @@ SND_Spatialize
 void SND_Spatialize(channel_t *ch)
 {
     vec_t dot;
-    vec_t ldist, rdist, dist;
+    vec_t   dist;//,ldist,rdist;
     vec_t lscale, rscale, scale;
     vec3_t source_vec;
-	sfx_t *snd;
+	//sfx_t *snd;
 
 // anything coming from the view entity will allways be full volume
 	if (ch->entnum == cl.viewentity)
@@ -413,7 +413,7 @@ void SND_Spatialize(channel_t *ch)
 
 // calculate stereo seperation and distance attenuation
 
-	snd = ch->sfx;
+	//snd = ch->sfx;
 	VectorSubtract(ch->origin, listener_origin, source_vec);
 	
 	dist = VectorNormalize(source_vec) * ch->dist_mult;

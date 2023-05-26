@@ -849,14 +849,19 @@ void Host_Init (quakeparms_t *parms)
 		if (!host_colormap)
 			Sys_Error ("Couldn't load gfx/colormap.lmp");
 
+	Con_Printf("done\nVID_Init...");
 		VID_Init (host_basepal);
+	Con_Printf("done\nDraw_Init...");
 
 		Draw_Init ();
+	Con_Printf("done\nSCR_Init...");
 		SCR_Init ();
+	Con_Printf("done\nR_Init...");
 		R_Init ();
 #if 1 //ndef	_WIN32
 	// on Win32, sound initialization has to come before video initialization, so we
 	// can put up a popup if the sound hardware is in use
+	Con_Printf("done\nS_Init...");
 		S_Init ();
 #else
 
@@ -867,9 +872,13 @@ void Host_Init (quakeparms_t *parms)
 
 #endif	// _WIN32
 		//CDAudio_Init ();
+	Con_Printf("done\nSbar_Init...");
 		Sbar_Init ();
+	Con_Printf("done\nCL_Init...");
 		CL_Init ();
+	Con_Printf("done\nIN_Init...");
 		IN_Init ();
+	Con_Printf("done...\n");
 	}
 
 	Cvar_RegisterVariable (&cl_maxfps);

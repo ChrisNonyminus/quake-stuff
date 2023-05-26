@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
+#ifndef N64
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -28,6 +29,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <sys/param.h>
 #include <sys/ioctl.h>
 #include <errno.h>
+#endif
 
 #ifdef __sun__
 #include <sys/filio.h>
@@ -60,6 +62,8 @@ net_driver_t net_drivers[MAX_NET_DRIVERS] =
 };
 int net_numdrivers = 1;
 
+#ifndef N64
+
 extern int gethostname (char *, int);
 extern int close (int);
 
@@ -71,7 +75,6 @@ static int net_broadcastsocket = 0;
 static struct qsockaddr broadcastaddr;
 
 static unsigned long myAddr;
-
 #include "net_udp.h"
 
 //=============================================================================
@@ -435,3 +438,6 @@ int UDP_SetSocketPort (struct qsockaddr *addr, int port)
 }
 
 //=============================================================================
+
+#else
+#endif

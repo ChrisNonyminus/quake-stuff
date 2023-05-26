@@ -2,4 +2,8 @@
 baseq2/
 id1/
 bin/
-build/
+*build*/
+.idea/
+
+
+*.z64

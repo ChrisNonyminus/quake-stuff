@@ -1,5 +1,5 @@
 /*
-Copyright (C) 1997-2001 Id Software, Inc.
+Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -17,622 +17,784 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 */
+
+#include "quakedef.h"
 #include "r_local.h"
 
-vec3_t r_pright, r_pup, r_ppn;
+#define MAX_PARTICLES			2048	// default max # of particles at one
+										//  time
+#define ABSOLUTE_MIN_PARTICLES	512		// no fewer than this no matter what's
+										//  on the command line
 
-#define PARTICLE_33     0
-#define PARTICLE_66     1
-#define PARTICLE_OPAQUE 2
+int		ramp1[8] = {0x6f, 0x6d, 0x6b, 0x69, 0x67, 0x65, 0x63, 0x61};
+int		ramp2[8] = {0x6f, 0x6e, 0x6d, 0x6c, 0x6b, 0x6a, 0x68, 0x66};
+int		ramp3[8] = {0x6d, 0x6b, 6, 5, 4, 3};
 
-typedef struct
-{
-	particle_t *particle;
-	int         level;
-	int         color;
-} partparms_t;
+particle_t	*active_particles, *free_particles;
 
-static partparms_t partparms;
+particle_t	*particles;
+int			r_numparticles;
 
-#if id386 && !defined __linux__
+vec3_t			r_pright, r_pup, r_ppn;
 
-static unsigned s_prefetch_address;
 
 /*
-** BlendParticleXX
-**
-** Inputs:
-** EAX = color
-** EDI = pdest
-**
-** Scratch:
-** EBX = scratch (dstcolor)
-** EBP = scratch
-**
-** Outputs:
-** none
+===============
+R_InitParticles
+===============
 */
-__declspec(naked) void BlendParticle33( void )
+void R_InitParticles (void)
 {
-	//	return vid.alphamap[color + dstcolor*256];
-	__asm mov ebp, vid.alphamap
-	__asm xor ebx, ebx
+	int		i;
 
-	__asm mov bl,  byte ptr [edi]
-	__asm shl ebx, 8
+	i = COM_CheckParm ("-particles");
 
-	__asm add ebp, ebx
-	__asm add ebp, eax
-
-	__asm mov al,  byte ptr [ebp]
-
-	__asm mov byte ptr [edi], al
-
-	__asm ret
-}
-
-__declspec(naked) void BlendParticle66( void )
-{
-	//	return vid.alphamap[pcolor*256 + dstcolor];
-	__asm mov ebp, vid.alphamap
-	__asm xor ebx, ebx
-
-	__asm shl eax,  8
-	__asm mov bl,   byte ptr [edi]
-
-	__asm add ebp, ebx
-	__asm add ebp, eax
-
-	__asm mov al,  byte ptr [ebp]
-
-	__asm mov byte ptr [edi], al
-
-	__asm ret
-}
-
-__declspec(naked) void BlendParticle100( void )
-{
-	__asm mov byte ptr [edi], al
-	__asm ret
-}
-
-/*
-** R_DrawParticle (asm version)
-**
-** Since we use __declspec( naked ) we don't have a stack frame
-** that we can use.  Since I want to reserve EBP anyway, I tossed
-** all the important variables into statics.  This routine isn't
-** meant to be re-entrant, so this shouldn't cause any problems
-** other than a slightly higher global memory footprint.
-**
-*/
-__declspec(naked) void R_DrawParticle( void )
-{
-	static vec3_t	local, transformed;
-	static float	zi;
-	static int      u, v, tmp;
-	static short    izi;
-	static int      ebpsave;
-
-	static byte (*blendfunc)(void);
-
-	/*
-	** must be memvars since x86 can't load constants
-	** directly.  I guess I could use fld1, but that
-	** actually costs one more clock than fld [one]!
-	*/
-	static float    particle_z_clip    = PARTICLE_Z_CLIP;
-	static float    one                = 1.0F;
-	static float    point_five         = 0.5F;
-	static float    eight_thousand_hex = 0x8000;
-
-	/*
-	** save trashed variables
-	*/
-	__asm mov  ebpsave, ebp
-	__asm push esi
-	__asm push edi
-
-	/*
-	** transform the particle
-	*/
-	// VectorSubtract (pparticle->origin, r_origin, local);
-	__asm mov  esi, partparms.particle
-	__asm fld  dword ptr [esi+0]          ; p_o.x
-	__asm fsub dword ptr [r_origin+0]     ; p_o.x-r_o.x
-	__asm fld  dword ptr [esi+4]          ; p_o.y | p_o.x-r_o.x
-	__asm fsub dword ptr [r_origin+4]     ; p_o.y-r_o.y | p_o.x-r_o.x
-	__asm fld  dword ptr [esi+8]          ; p_o.z | p_o.y-r_o.y | p_o.x-r_o.x
-	__asm fsub dword ptr [r_origin+8]     ; p_o.z-r_o.z | p_o.y-r_o.y | p_o.x-r_o.x
-	__asm fxch st(2)                      ; p_o.x-r_o.x | p_o.y-r_o.y | p_o.z-r_o.z
-	__asm fstp dword ptr [local+0]        ; p_o.y-r_o.y | p_o.z-r_o.z
-	__asm fstp dword ptr [local+4]        ; p_o.z-r_o.z
-	__asm fstp dword ptr [local+8]        ; (empty)
-
-	// transformed[0] = DotProduct(local, r_pright);
-	// transformed[1] = DotProduct(local, r_pup);
-	// transformed[2] = DotProduct(local, r_ppn);
-	__asm fld  dword ptr [local+0]        ; l.x
-	__asm fmul dword ptr [r_pright+0]     ; l.x*pr.x
-	__asm fld  dword ptr [local+4]        ; l.y | l.x*pr.x
-	__asm fmul dword ptr [r_pright+4]     ; l.y*pr.y | l.x*pr.x
-	__asm fld  dword ptr [local+8]        ; l.z | l.y*pr.y | l.x*pr.x
-	__asm fmul dword ptr [r_pright+8]     ; l.z*pr.z | l.y*pr.y | l.x*pr.x
-	__asm fxch st(2)                      ; l.x*pr.x | l.y*pr.y | l.z*pr.z
-	__asm faddp st(1), st                 ; l.x*pr.x + l.y*pr.y | l.z*pr.z
-	__asm faddp st(1), st                 ; l.x*pr.x + l.y*pr.y + l.z*pr.z
-	__asm fstp  dword ptr [transformed+0] ; (empty)
-
-	__asm fld  dword ptr [local+0]        ; l.x
-	__asm fmul dword ptr [r_pup+0]        ; l.x*pr.x
-	__asm fld  dword ptr [local+4]        ; l.y | l.x*pr.x
-	__asm fmul dword ptr [r_pup+4]        ; l.y*pr.y | l.x*pr.x
-	__asm fld  dword ptr [local+8]        ; l.z | l.y*pr.y | l.x*pr.x
-	__asm fmul dword ptr [r_pup+8]        ; l.z*pr.z | l.y*pr.y | l.x*pr.x
-	__asm fxch st(2)                      ; l.x*pr.x | l.y*pr.y | l.z*pr.z
-	__asm faddp st(1), st                 ; l.x*pr.x + l.y*pr.y | l.z*pr.z
-	__asm faddp st(1), st                 ; l.x*pr.x + l.y*pr.y + l.z*pr.z
-	__asm fstp  dword ptr [transformed+4] ; (empty)
-
-	__asm fld  dword ptr [local+0]        ; l.x
-	__asm fmul dword ptr [r_ppn+0]        ; l.x*pr.x
-	__asm fld  dword ptr [local+4]        ; l.y | l.x*pr.x
-	__asm fmul dword ptr [r_ppn+4]        ; l.y*pr.y | l.x*pr.x
-	__asm fld  dword ptr [local+8]        ; l.z | l.y*pr.y | l.x*pr.x
-	__asm fmul dword ptr [r_ppn+8]        ; l.z*pr.z | l.y*pr.y | l.x*pr.x
-	__asm fxch st(2)                      ; l.x*pr.x | l.y*pr.y | l.z*pr.z
-	__asm faddp st(1), st                 ; l.x*pr.x + l.y*pr.y | l.z*pr.z
-	__asm faddp st(1), st                 ; l.x*pr.x + l.y*pr.y + l.z*pr.z
-	__asm fstp  dword ptr [transformed+8] ; (empty)
-
-	/*
-	** make sure that the transformed particle is not in front of
-	** the particle Z clip plane.  We can do the comparison in 
-	** integer space since we know the sign of one of the inputs
-	** and can figure out the sign of the other easily enough.
-	*/
-	//	if (transformed[2] < PARTICLE_Z_CLIP)
-	//		return;
-
-	__asm mov  eax, dword ptr [transformed+8]
-	__asm and  eax, eax
-	__asm js   end
-	__asm cmp  eax, particle_z_clip
-	__asm jl   end
-
-	/*
-	** project the point by initiating the 1/z calc
-	*/
-	//	zi = 1.0 / transformed[2];
-	__asm fld   one
-	__asm fdiv  dword ptr [transformed+8]
-
-	/*
-	** bind the blend function pointer to the appropriate blender
-	** while we're dividing
-	*/
-	//if ( level == PARTICLE_33 )
-	//	blendparticle = BlendParticle33;
-	//else if ( level == PARTICLE_66 )
-	//	blendparticle = BlendParticle66;
-	//else 
-	//	blendparticle = BlendParticle100;
-
-	__asm cmp partparms.level, PARTICLE_66
-	__asm je  blendfunc_66
-	__asm jl  blendfunc_33
-	__asm lea ebx, BlendParticle100
-	__asm jmp done_selecting_blend_func
-blendfunc_33:
-	__asm lea ebx, BlendParticle33
-	__asm jmp done_selecting_blend_func
-blendfunc_66:
-	__asm lea ebx, BlendParticle66
-done_selecting_blend_func:
-	__asm mov blendfunc, ebx
-
-	// prefetch the next particle
-	__asm mov ebp, s_prefetch_address
-	__asm mov ebp, [ebp]
-
-	// finish the above divide
-	__asm fstp  zi
-
-	// u = (int)(xcenter + zi * transformed[0] + 0.5);
-	// v = (int)(ycenter - zi * transformed[1] + 0.5);
-	__asm fld   zi                           ; zi
-	__asm fmul  dword ptr [transformed+0]    ; zi * transformed[0]
-	__asm fld   zi                           ; zi | zi * transformed[0]
-	__asm fmul  dword ptr [transformed+4]    ; zi * transformed[1] | zi * transformed[0]
-	__asm fxch  st(1)                        ; zi * transformed[0] | zi * transformed[1]
-	__asm fadd  xcenter                      ; xcenter + zi * transformed[0] | zi * transformed[1]
-	__asm fxch  st(1)                        ; zi * transformed[1] | xcenter + zi * transformed[0]
-	__asm fld   ycenter                      ; ycenter | zi * transformed[1] | xcenter + zi * transformed[0]
-    __asm fsubrp st(1), st(0)                ; ycenter - zi * transformed[1] | xcenter + zi * transformed[0]
-  	__asm fxch  st(1)                        ; xcenter + zi * transformed[0] | ycenter + zi * transformed[1]
-  	__asm fadd  point_five                   ; xcenter + zi * transformed[0] + 0.5 | ycenter - zi * transformed[1]
-  	__asm fxch  st(1)                        ; ycenter - zi * transformed[1] | xcenter + zi * transformed[0] + 0.5 
-  	__asm fadd  point_five                   ; ycenter - zi * transformed[1] + 0.5 | xcenter + zi * transformed[0] + 0.5 
-  	__asm fxch  st(1)                        ; u | v
-  	__asm fistp dword ptr [u]                ; v
-  	__asm fistp dword ptr [v]                ; (empty)
-
-	/*
-	** clip out the particle
-	*/
-
-	//	if ((v > d_vrectbottom_particle) || 
-	//		(u > d_vrectright_particle) ||
-	//		(v < d_vrecty) ||
-	//		(u < d_vrectx))
-	//	{
-	//		return;
-	//	}
-
-	__asm mov ebx, u
-	__asm mov ecx, v
-	__asm cmp ecx, d_vrectbottom_particle
-	__asm jg  end
-	__asm cmp ecx, d_vrecty
-	__asm jl  end
-	__asm cmp ebx, d_vrectright_particle
-	__asm jg  end
-	__asm cmp ebx, d_vrectx
-	__asm jl  end
-
-	/*
-	** compute addresses of zbuffer, framebuffer, and 
-	** compute the Z-buffer reference value.
-	**
-	** EBX      = U
-	** ECX      = V
-	**
-	** Outputs:
-	** ESI = Z-buffer address
-	** EDI = framebuffer address
-	*/
-	// ESI = d_pzbuffer + (d_zwidth * v) + u;
-	__asm mov esi, d_pzbuffer             ; esi = d_pzbuffer
-	__asm mov eax, d_zwidth               ; eax = d_zwidth
-	__asm mul ecx                         ; eax = d_zwidth*v
-	__asm add eax, ebx                    ; eax = d_zwidth*v+u
-	__asm shl eax, 1                      ; eax = 2*(d_zwidth*v+u)
-	__asm add esi, eax                    ; esi = ( short * ) ( d_pzbuffer + ( d_zwidth * v ) + u )
-
-	// initiate
-	// izi = (int)(zi * 0x8000);
-	__asm fld  zi
-	__asm fmul eight_thousand_hex
-
-	// EDI = pdest = d_viewbuffer + d_scantable[v] + u;
-	__asm lea edi, [d_scantable+ecx*4]
-	__asm mov edi, [edi]
-	__asm add edi, d_viewbuffer
-	__asm add edi, ebx
-
-	// complete
-	// izi = (int)(zi * 0x8000);
-	__asm fistp tmp
-	__asm mov   eax, tmp
-	__asm mov   izi, ax
-
-	/*
-	** determine the screen area covered by the particle,
-	** which also means clamping to a min and max
-	*/
-	//	pix = izi >> d_pix_shift;
-	__asm xor edx, edx
-	__asm mov dx, izi
-	__asm mov ecx, d_pix_shift
-	__asm shr dx, cl
-
-	//	if (pix < d_pix_min)
-	//		pix = d_pix_min;
-	__asm cmp edx, d_pix_min
-	__asm jge check_pix_max
-	__asm mov edx, d_pix_min
-	__asm jmp skip_pix_clamp
-
-	//	else if (pix > d_pix_max)
-	//		pix = d_pix_max;
-check_pix_max:
-	__asm cmp edx, d_pix_max
-	__asm jle skip_pix_clamp
-	__asm mov edx, d_pix_max
-
-skip_pix_clamp:
-
-	/*
-	** render the appropriate pixels
-	**
-	** ECX = count (used for inner loop)
-	** EDX = count (used for outer loop)
-	** ESI = zbuffer
-	** EDI = framebuffer
-	*/
-	__asm mov ecx, edx
-
-	__asm cmp ecx, 1
-	__asm ja  over
-
-over:
-
-	/*
-	** at this point:
-	**
-	** ECX = count
-	*/
-	__asm push ecx
-	__asm push edi
-	__asm push esi
-
-top_of_pix_vert_loop:
-
-top_of_pix_horiz_loop:
-
-	//	for ( ; count ; count--, pz += d_zwidth, pdest += screenwidth)
-	//	{
-	//		for (i=0 ; i<pix ; i++)
-	//		{
-	//			if (pz[i] <= izi)
-	//			{
-	//				pdest[i] = blendparticle( color, pdest[i] );
-	//			}
-	//		}
-	//	}
-	__asm xor   eax, eax
-
-	__asm mov   ax, word ptr [esi]
-
-	__asm cmp   ax, izi
-	__asm jg    end_of_horiz_loop
-
-#if ENABLE_ZWRITES_FOR_PARTICLES
-  	__asm mov   bp, izi
-  	__asm mov   word ptr [esi], bp
-#endif
-
-	__asm mov   eax, partparms.color
-
-	__asm call  [blendfunc]
-
-	__asm add   edi, 1
-	__asm add   esi, 2
-
-end_of_horiz_loop:
-
-	__asm dec   ecx
-	__asm jnz   top_of_pix_horiz_loop
-
-	__asm pop   esi
-	__asm pop   edi
-
-	__asm mov   ebp, d_zwidth
-	__asm shl   ebp, 1
-
-	__asm add   esi, ebp
-	__asm add   edi, [r_screenwidth]
-
-	__asm pop   ecx
-	__asm push  ecx
-
-	__asm push  edi
-	__asm push  esi
-
-	__asm dec   edx
-	__asm jnz   top_of_pix_vert_loop
-
-	__asm pop   ecx
-	__asm pop   ecx
-	__asm pop   ecx
-
-end:
-	__asm pop edi
-	__asm pop esi
-	__asm mov ebp, ebpsave
-	__asm ret
-}
-
-#else
-
-static byte BlendParticle33( int pcolor, int dstcolor )
-{
-	return vid.alphamap[pcolor + dstcolor*256];
-}
-
-static byte BlendParticle66( int pcolor, int dstcolor )
-{
-	return vid.alphamap[pcolor*256+dstcolor];
-}
-
-static byte BlendParticle100( int pcolor, int dstcolor )
-{
-	dstcolor = dstcolor;
-	return pcolor;
-}
-
-/*
-** R_DrawParticle
-**
-** Yes, this is amazingly slow, but it's the C reference
-** implementation and should be both robust and vaguely
-** understandable.  The only time this path should be
-** executed is if we're debugging on x86 or if we're
-** recompiling and deploying on a non-x86 platform.
-**
-** To minimize error and improve readability I went the 
-** function pointer route.  This exacts some overhead, but
-** it pays off in clean and easy to understand code.
-*/
-void R_DrawParticle( void )
-{
-	particle_t *pparticle = partparms.particle;
-	int         level     = partparms.level;
-	vec3_t	local, transformed;
-	float	zi;
-	byte	*pdest;
-	short	*pz;
-	int      color = pparticle->color;
-	int		i, izi, pix, count, u, v;
-	byte  (*blendparticle)( int, int );
-
-	/*
-	** transform the particle
-	*/
-	VectorSubtract (pparticle->origin, r_origin, local);
-
-	transformed[0] = DotProduct(local, r_pright);
-	transformed[1] = DotProduct(local, r_pup);
-	transformed[2] = DotProduct(local, r_ppn);		
-
-	if (transformed[2] < PARTICLE_Z_CLIP)
-		return;
-
-	/*
-	** bind the blend function pointer to the appropriate blender
-	*/
-	if ( level == PARTICLE_33 )
-		blendparticle = BlendParticle33;
-	else if ( level == PARTICLE_66 )
-		blendparticle = BlendParticle66;
-	else 
-		blendparticle = BlendParticle100;
-
-	/*
-	** project the point
-	*/
-	// FIXME: preadjust xcenter and ycenter
-	zi = 1.0 / transformed[2];
-	u = (int)(xcenter + zi * transformed[0] + 0.5);
-	v = (int)(ycenter - zi * transformed[1] + 0.5);
-
-	if ((v > d_vrectbottom_particle) || 
-		(u > d_vrectright_particle) ||
-		(v < d_vrecty) ||
-		(u < d_vrectx))
+	if (i)
 	{
-		return;
+		r_numparticles = (int)(Q_atoi(com_argv[i+1]));
+		if (r_numparticles < ABSOLUTE_MIN_PARTICLES)
+			r_numparticles = ABSOLUTE_MIN_PARTICLES;
+	}
+	else
+	{
+		r_numparticles = MAX_PARTICLES;
 	}
 
-	/*
-	** compute addresses of zbuffer, framebuffer, and 
-	** compute the Z-buffer reference value.
-	*/
-	pz = d_pzbuffer + (d_zwidth * v) + u;
-	pdest = d_viewbuffer + d_scantable[v] + u;
-	izi = (int)(zi * 0x8000);
-
-	/*
-	** determine the screen area covered by the particle,
-	** which also means clamping to a min and max
-	*/
-	pix = izi >> d_pix_shift;
-	if (pix < d_pix_min)
-		pix = d_pix_min;
-	else if (pix > d_pix_max)
-		pix = d_pix_max;
-
-	/*
-	** render the appropriate pixels
-	*/
-	count = pix;
-
-    switch (level) {
-    case PARTICLE_33 :
-        for ( ; count ; count--, pz += d_zwidth, pdest += r_screenwidth)
-        {
-//FIXME--do it in blocks of 8?
-            for (i=0 ; i<pix ; i++)
-            {
-                if (pz[i] <= izi)
-                {
-                    pz[i]    = izi;
-                    pdest[i] = vid.alphamap[color + ((int)pdest[i]<<8)];
-                }
-            }
-        }
-        break;
-
-    case PARTICLE_66 :
-        for ( ; count ; count--, pz += d_zwidth, pdest += r_screenwidth)
-        {
-            for (i=0 ; i<pix ; i++)
-            {
-                if (pz[i] <= izi)
-                {
-                    pz[i]    = izi;
-                    pdest[i] = vid.alphamap[(color<<8) + (int)pdest[i]];
-                }
-            }
-        }
-        break;
-
-    default:  //100
-        for ( ; count ; count--, pz += d_zwidth, pdest += r_screenwidth)
-        {
-            for (i=0 ; i<pix ; i++)
-            {
-                if (pz[i] <= izi)
-                {
-                    pz[i]    = izi;
-                    pdest[i] = color;
-                }
-            }
-        }
-        break;
-    }
+	particles = (particle_t *)
+			Hunk_AllocName (r_numparticles * sizeof(particle_t), "particles");
 }
 
-#endif	// !id386
+#ifdef QUAKE2
+void R_DarkFieldParticles (entity_t *ent)
+{
+	int			i, j, k;
+	particle_t	*p;
+	float		vel;
+	vec3_t		dir;
+	vec3_t		org;
+
+	org[0] = ent->origin[0];
+	org[1] = ent->origin[1];
+	org[2] = ent->origin[2];
+	for (i=-16 ; i<16 ; i+=8)
+		for (j=-16 ; j<16 ; j+=8)
+			for (k=0 ; k<32 ; k+=8)
+			{
+				if (!free_particles)
+					return;
+				p = free_particles;
+				free_particles = p->next;
+				p->next = active_particles;
+				active_particles = p;
+		
+				p->die = cl.time + 0.2 + (rand()&7) * 0.02;
+				p->color = 150 + rand()%6;
+				p->type = pt_slowgrav;
+				
+				dir[0] = j*8;
+				dir[1] = i*8;
+				dir[2] = k*8;
+	
+				p->org[0] = org[0] + i + (rand()&3);
+				p->org[1] = org[1] + j + (rand()&3);
+				p->org[2] = org[2] + k + (rand()&3);
+	
+				VectorNormalize (dir);						
+				vel = 50 + (rand()&63);
+				VectorScale (dir, vel, p->vel);
+			}
+}
+#endif
+
 
 /*
-** R_DrawParticles
-**
-** Responsible for drawing all of the particles in the particle list
-** throughout the world.  Doesn't care if we're using the C path or
-** if we're using the asm path, it simply assigns a function pointer
-** and goes.
+===============
+R_EntityParticles
+===============
 */
+
+#define NUMVERTEXNORMALS	162
+extern	float	r_avertexnormals[NUMVERTEXNORMALS][3];
+vec3_t	avelocities[NUMVERTEXNORMALS];
+float	beamlength = 16;
+vec3_t	avelocity = {23, 7, 3};
+float	partstep = 0.01;
+float	timescale = 0.01;
+
+void R_EntityParticles (entity_t *ent)
+{
+	int			count;
+	int			i;
+	particle_t	*p;
+	float		angle;
+	float		sr, sp, sy, cr, cp, cy;
+	vec3_t		forward;
+	float		dist;
+	
+	dist = 64;
+	count = 50;
+
+if (!avelocities[0][0])
+{
+for (i=0 ; i<NUMVERTEXNORMALS*3 ; i++)
+avelocities[0][i] = (rand()&255) * 0.01;
+}
+
+
+	for (i=0 ; i<NUMVERTEXNORMALS ; i++)
+	{
+		angle = cl.time * avelocities[i][0];
+		sy = sin(angle);
+		cy = cos(angle);
+		angle = cl.time * avelocities[i][1];
+		sp = sin(angle);
+		cp = cos(angle);
+		angle = cl.time * avelocities[i][2];
+		sr = sin(angle);
+		cr = cos(angle);
+	
+		forward[0] = cp*cy;
+		forward[1] = cp*sy;
+		forward[2] = -sp;
+
+		if (!free_particles)
+			return;
+		p = free_particles;
+		free_particles = p->next;
+		p->next = active_particles;
+		active_particles = p;
+
+		p->die = cl.time + 0.01;
+		p->color = 0x6f;
+		p->type = pt_explode;
+		
+		p->org[0] = ent->origin[0] + r_avertexnormals[i][0]*dist + forward[0]*beamlength;			
+		p->org[1] = ent->origin[1] + r_avertexnormals[i][1]*dist + forward[1]*beamlength;			
+		p->org[2] = ent->origin[2] + r_avertexnormals[i][2]*dist + forward[2]*beamlength;			
+	}
+}
+
+
+/*
+===============
+R_ClearParticles
+===============
+*/
+void R_ClearParticles (void)
+{
+	int		i;
+	
+	free_particles = &particles[0];
+	active_particles = NULL;
+
+	for (i=0 ;i<r_numparticles ; i++)
+		particles[i].next = &particles[i+1];
+	particles[r_numparticles-1].next = NULL;
+}
+
+
+void R_ReadPointFile_f (void)
+{
+	FILE	*f;
+	vec3_t	org;
+	int		r;
+	int		c;
+	particle_t	*p;
+	char	name[MAX_OSPATH];
+	
+	sprintf (name,"maps/%s.pts", sv.name);
+
+	COM_FOpenFile (name, &f);
+	if (!f)
+	{
+		Con_Printf ("couldn't open %s\n", name);
+		return;
+	}
+	
+	Con_Printf ("Reading %s...\n", name);
+	c = 0;
+	for ( ;; )
+	{
+		r = fscanf (f,"%f %f %f\n", &org[0], &org[1], &org[2]);
+		if (r != 3)
+			break;
+		c++;
+		
+		if (!free_particles)
+		{
+			Con_Printf ("Not enough free particles\n");
+			break;
+		}
+		p = free_particles;
+		free_particles = p->next;
+		p->next = active_particles;
+		active_particles = p;
+		
+		p->die = 99999;
+		p->color = (-c)&15;
+		p->type = pt_static;
+		VectorCopy (vec3_origin, p->vel);
+		VectorCopy (org, p->org);
+	}
+
+	fclose (f);
+	Con_Printf ("%i points read\n", c);
+}
+
+/*
+===============
+R_ParseParticleEffect
+
+Parse an effect out of the server message
+===============
+*/
+void R_ParseParticleEffect (void)
+{
+	vec3_t		org, dir;
+	int			i, count, msgcount, color;
+	
+	for (i=0 ; i<3 ; i++)
+		org[i] = MSG_ReadCoord ();
+	for (i=0 ; i<3 ; i++)
+		dir[i] = MSG_ReadChar () * (1.0/16);
+	msgcount = MSG_ReadByte ();
+	color = MSG_ReadByte ();
+
+if (msgcount == 255)
+	count = 1024;
+else
+	count = msgcount;
+	
+	R_RunParticleEffect (org, dir, color, count);
+}
+	
+/*
+===============
+R_ParticleExplosion
+
+===============
+*/
+void R_ParticleExplosion (vec3_t org)
+{
+	int			i, j;
+	particle_t	*p;
+	
+	for (i=0 ; i<1024 ; i++)
+	{
+		if (!free_particles)
+			return;
+		p = free_particles;
+		free_particles = p->next;
+		p->next = active_particles;
+		active_particles = p;
+
+		p->die = cl.time + 5;
+		p->color = ramp1[0];
+		p->ramp = rand()&3;
+		if (i & 1)
+		{
+			p->type = pt_explode;
+			for (j=0 ; j<3 ; j++)
+			{
+				p->org[j] = org[j] + ((rand()%32)-16);
+				p->vel[j] = (rand()%512)-256;
+			}
+		}
+		else
+		{
+			p->type = pt_explode2;
+			for (j=0 ; j<3 ; j++)
+			{
+				p->org[j] = org[j] + ((rand()%32)-16);
+				p->vel[j] = (rand()%512)-256;
+			}
+		}
+	}
+}
+
+/*
+===============
+R_ParticleExplosion2
+
+===============
+*/
+void R_ParticleExplosion2 (vec3_t org, int colorStart, int colorLength)
+{
+	int			i, j;
+	particle_t	*p;
+	int			colorMod = 0;
+
+	for (i=0; i<512; i++)
+	{
+		if (!free_particles)
+			return;
+		p = free_particles;
+		free_particles = p->next;
+		p->next = active_particles;
+		active_particles = p;
+
+		p->die = cl.time + 0.3;
+		p->color = colorStart + (colorMod % colorLength);
+		colorMod++;
+
+		p->type = pt_blob;
+		for (j=0 ; j<3 ; j++)
+		{
+			p->org[j] = org[j] + ((rand()%32)-16);
+			p->vel[j] = (rand()%512)-256;
+		}
+	}
+}
+
+/*
+===============
+R_BlobExplosion
+
+===============
+*/
+void R_BlobExplosion (vec3_t org)
+{
+	int			i, j;
+	particle_t	*p;
+	
+	for (i=0 ; i<1024 ; i++)
+	{
+		if (!free_particles)
+			return;
+		p = free_particles;
+		free_particles = p->next;
+		p->next = active_particles;
+		active_particles = p;
+
+		p->die = cl.time + 1 + (rand()&8)*0.05;
+
+		if (i & 1)
+		{
+			p->type = pt_blob;
+			p->color = 66 + rand()%6;
+			for (j=0 ; j<3 ; j++)
+			{
+				p->org[j] = org[j] + ((rand()%32)-16);
+				p->vel[j] = (rand()%512)-256;
+			}
+		}
+		else
+		{
+			p->type = pt_blob2;
+			p->color = 150 + rand()%6;
+			for (j=0 ; j<3 ; j++)
+			{
+				p->org[j] = org[j] + ((rand()%32)-16);
+				p->vel[j] = (rand()%512)-256;
+			}
+		}
+	}
+}
+
+/*
+===============
+R_RunParticleEffect
+
+===============
+*/
+void R_RunParticleEffect (vec3_t org, vec3_t dir, int color, int count)
+{
+	int			i, j;
+	particle_t	*p;
+	
+	for (i=0 ; i<count ; i++)
+	{
+		if (!free_particles)
+			return;
+		p = free_particles;
+		free_particles = p->next;
+		p->next = active_particles;
+		active_particles = p;
+
+		if (count == 1024)
+		{	// rocket explosion
+			p->die = cl.time + 5;
+			p->color = ramp1[0];
+			p->ramp = rand()&3;
+			if (i & 1)
+			{
+				p->type = pt_explode;
+				for (j=0 ; j<3 ; j++)
+				{
+					p->org[j] = org[j] + ((rand()%32)-16);
+					p->vel[j] = (rand()%512)-256;
+				}
+			}
+			else
+			{
+				p->type = pt_explode2;
+				for (j=0 ; j<3 ; j++)
+				{
+					p->org[j] = org[j] + ((rand()%32)-16);
+					p->vel[j] = (rand()%512)-256;
+				}
+			}
+		}
+		else
+		{
+			p->die = cl.time + 0.1*(rand()%5);
+			p->color = (color&~7) + (rand()&7);
+			p->type = pt_slowgrav;
+			for (j=0 ; j<3 ; j++)
+			{
+				p->org[j] = org[j] + ((rand()&15)-8);
+				p->vel[j] = dir[j]*15;// + (rand()%300)-150;
+			}
+		}
+	}
+}
+
+
+/*
+===============
+R_LavaSplash
+
+===============
+*/
+void R_LavaSplash (vec3_t org)
+{
+	int			i, j, k;
+	particle_t	*p;
+	float		vel;
+	vec3_t		dir;
+
+	for (i=-16 ; i<16 ; i++)
+		for (j=-16 ; j<16 ; j++)
+			for (k=0 ; k<1 ; k++)
+			{
+				if (!free_particles)
+					return;
+				p = free_particles;
+				free_particles = p->next;
+				p->next = active_particles;
+				active_particles = p;
+		
+				p->die = cl.time + 2 + (rand()&31) * 0.02;
+				p->color = 224 + (rand()&7);
+				p->type = pt_slowgrav;
+				
+				dir[0] = j*8 + (rand()&7);
+				dir[1] = i*8 + (rand()&7);
+				dir[2] = 256;
+	
+				p->org[0] = org[0] + dir[0];
+				p->org[1] = org[1] + dir[1];
+				p->org[2] = org[2] + (rand()&63);
+	
+				VectorNormalize (dir);						
+				vel = 50 + (rand()&63);
+				VectorScale (dir, vel, p->vel);
+			}
+}
+
+/*
+===============
+R_TeleportSplash
+
+===============
+*/
+void R_TeleportSplash (vec3_t org)
+{
+	int			i, j, k;
+	particle_t	*p;
+	float		vel;
+	vec3_t		dir;
+
+	for (i=-16 ; i<16 ; i+=4)
+		for (j=-16 ; j<16 ; j+=4)
+			for (k=-24 ; k<32 ; k+=4)
+			{
+				if (!free_particles)
+					return;
+				p = free_particles;
+				free_particles = p->next;
+				p->next = active_particles;
+				active_particles = p;
+		
+				p->die = cl.time + 0.2 + (rand()&7) * 0.02;
+				p->color = 7 + (rand()&7);
+				p->type = pt_slowgrav;
+				
+				dir[0] = j*8;
+				dir[1] = i*8;
+				dir[2] = k*8;
+	
+				p->org[0] = org[0] + i + (rand()&3);
+				p->org[1] = org[1] + j + (rand()&3);
+				p->org[2] = org[2] + k + (rand()&3);
+	
+				VectorNormalize (dir);						
+				vel = 50 + (rand()&63);
+				VectorScale (dir, vel, p->vel);
+			}
+}
+
+void R_RocketTrail (vec3_t start, vec3_t end, int type)
+{
+	vec3_t		vec;
+	float		len;
+	int			j;
+	particle_t	*p;
+	int			dec;
+	static int	tracercount;
+
+	VectorSubtract (end, start, vec);
+	len = VectorNormalize (vec);
+	if (type < 128)
+		dec = 3;
+	else
+	{
+		dec = 1;
+		type -= 128;
+	}
+
+	while (len > 0)
+	{
+		len -= dec;
+
+		if (!free_particles)
+			return;
+		p = free_particles;
+		free_particles = p->next;
+		p->next = active_particles;
+		active_particles = p;
+		
+		VectorCopy (vec3_origin, p->vel);
+		p->die = cl.time + 2;
+
+		switch (type)
+		{
+			case 0:	// rocket trail
+				p->ramp = (rand()&3);
+				p->color = ramp3[(int)p->ramp];
+				p->type = pt_fire;
+				for (j=0 ; j<3 ; j++)
+					p->org[j] = start[j] + ((rand()%6)-3);
+				break;
+
+			case 1:	// smoke smoke
+				p->ramp = (rand()&3) + 2;
+				p->color = ramp3[(int)p->ramp];
+				p->type = pt_fire;
+				for (j=0 ; j<3 ; j++)
+					p->org[j] = start[j] + ((rand()%6)-3);
+				break;
+
+			case 2:	// blood
+				p->type = pt_grav;
+				p->color = 67 + (rand()&3);
+				for (j=0 ; j<3 ; j++)
+					p->org[j] = start[j] + ((rand()%6)-3);
+				break;
+
+			case 3:
+			case 5:	// tracer
+				p->die = cl.time + 0.5;
+				p->type = pt_static;
+				if (type == 3)
+					p->color = 52 + ((tracercount&4)<<1);
+				else
+					p->color = 230 + ((tracercount&4)<<1);
+			
+				tracercount++;
+
+				VectorCopy (start, p->org);
+				if (tracercount & 1)
+				{
+					p->vel[0] = 30*vec[1];
+					p->vel[1] = 30*-vec[0];
+				}
+				else
+				{
+					p->vel[0] = 30*-vec[1];
+					p->vel[1] = 30*vec[0];
+				}
+				break;
+
+			case 4:	// slight blood
+				p->type = pt_grav;
+				p->color = 67 + (rand()&3);
+				for (j=0 ; j<3 ; j++)
+					p->org[j] = start[j] + ((rand()%6)-3);
+				len -= 3;
+				break;
+
+			case 6:	// voor trail
+				p->color = 9*16 + 8 + (rand()&3);
+				p->type = pt_static;
+				p->die = cl.time + 0.3;
+				for (j=0 ; j<3 ; j++)
+					p->org[j] = start[j] + ((rand()&15)-8);
+				break;
+		}
+		
+
+		VectorAdd (start, vec, start);
+	}
+}
+
+
+/*
+===============
+R_DrawParticles
+===============
+*/
+extern	cvar_t	sv_gravity;
+
 void R_DrawParticles (void)
 {
-	particle_t *p;
-	int         i;
-	extern unsigned long fpu_sp24_cw, fpu_chop_cw;
+	particle_t		*p, *kill;
+	float			grav;
+	int				i;
+	float			time2, time3;
+	float			time1;
+	float			dvel;
+	float			frametime;
+	
+#ifdef GLQUAKE
+	vec3_t			up, right;
+	float			scale;
 
-	VectorScale( vright, xscaleshrink, r_pright );
-	VectorScale( vup, yscaleshrink, r_pup );
-	VectorCopy( vpn, r_ppn );
+    GL_Bind(particletexture);
+	glEnable (GL_BLEND);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glBegin (GL_TRIANGLES);
 
-#if id386 && !defined __linux__
-	__asm fldcw word ptr [fpu_sp24_cw]
+	VectorScale (vup, 1.5, up);
+	VectorScale (vright, 1.5, right);
+#else
+	D_StartParticles ();
+
+	VectorScale (vright, xscaleshrink, r_pright);
+	VectorScale (vup, yscaleshrink, r_pup);
+	VectorCopy (vpn, r_ppn);
 #endif
-
-	for (p=r_newrefdef.particles, i=0 ; i<r_newrefdef.num_particles ; i++,p++)
+	frametime = cl.time - cl.oldtime;
+	time3 = frametime * 15;
+	time2 = frametime * 10; // 15;
+	time1 = frametime * 5;
+	grav = frametime * sv_gravity.value * 0.05;
+	dvel = 4*frametime;
+	
+	for ( ;; ) 
 	{
-
-		if ( p->alpha > 0.66 )
-			partparms.level = PARTICLE_OPAQUE;
-		else if ( p->alpha > 0.33 )
-			partparms.level = PARTICLE_66;
-		else
-			partparms.level = PARTICLE_33;
-
-		partparms.particle = p;
-		partparms.color    = p->color;
-
-#if id386 && !defined __linux__
-		if ( i < r_newrefdef.num_particles-1 )
-			s_prefetch_address = ( unsigned int ) ( p + 1 );
-		else
-			s_prefetch_address = ( unsigned int ) r_newrefdef.particles;
-#endif
-
-		R_DrawParticle();
+		kill = active_particles;
+		if (kill && kill->die < cl.time)
+		{
+			active_particles = kill->next;
+			kill->next = free_particles;
+			free_particles = kill;
+			continue;
+		}
+		break;
 	}
 
-#if id386 && !defined __linux__
-	__asm fldcw word ptr [fpu_chop_cw]
-#endif
+	for (p=active_particles ; p ; p=p->next)
+	{
+		for ( ;; )
+		{
+			kill = p->next;
+			if (kill && kill->die < cl.time)
+			{
+				p->next = kill->next;
+				kill->next = free_particles;
+				free_particles = kill;
+				continue;
+			}
+			break;
+		}
 
+#ifdef GLQUAKE
+		// hack a scale up to keep particles from disapearing
+		scale = (p->org[0] - r_origin[0])*vpn[0] + (p->org[1] - r_origin[1])*vpn[1]
+			+ (p->org[2] - r_origin[2])*vpn[2];
+		if (scale < 20)
+			scale = 1;
+		else
+			scale = 1 + scale * 0.004;
+		glColor3ubv ((byte *)&d_8to24table[(int)p->color]);
+		glTexCoord2f (0,0);
+		glVertex3fv (p->org);
+		glTexCoord2f (1,0);
+		glVertex3f (p->org[0] + up[0]*scale, p->org[1] + up[1]*scale, p->org[2] + up[2]*scale);
+		glTexCoord2f (0,1);
+		glVertex3f (p->org[0] + right[0]*scale, p->org[1] + right[1]*scale, p->org[2] + right[2]*scale);
+#else
+		D_DrawParticle (p);
+#endif
+		p->org[0] += p->vel[0]*frametime;
+		p->org[1] += p->vel[1]*frametime;
+		p->org[2] += p->vel[2]*frametime;
+		
+		switch (p->type)
+		{
+		case pt_static:
+			break;
+		case pt_fire:
+			p->ramp += time1;
+			if (p->ramp >= 6)
+				p->die = -1;
+			else
+				p->color = ramp3[(int)p->ramp];
+			p->vel[2] += grav;
+			break;
+
+		case pt_explode:
+			p->ramp += time2;
+			if (p->ramp >=8)
+				p->die = -1;
+			else
+				p->color = ramp1[(int)p->ramp];
+			for (i=0 ; i<3 ; i++)
+				p->vel[i] += p->vel[i]*dvel;
+			p->vel[2] -= grav;
+			break;
+
+		case pt_explode2:
+			p->ramp += time3;
+			if (p->ramp >=8)
+				p->die = -1;
+			else
+				p->color = ramp2[(int)p->ramp];
+			for (i=0 ; i<3 ; i++)
+				p->vel[i] -= p->vel[i]*frametime;
+			p->vel[2] -= grav;
+			break;
+
+		case pt_blob:
+			for (i=0 ; i<3 ; i++)
+				p->vel[i] += p->vel[i]*dvel;
+			p->vel[2] -= grav;
+			break;
+
+		case pt_blob2:
+			for (i=0 ; i<2 ; i++)
+				p->vel[i] -= p->vel[i]*dvel;
+			p->vel[2] -= grav;
+			break;
+
+		case pt_grav:
+#ifdef QUAKE2
+			p->vel[2] -= grav * 20;
+			break;
+#endif
+		case pt_slowgrav:
+			p->vel[2] -= grav;
+			break;
+		}
+	}
+
+#ifdef GLQUAKE
+	glEnd ();
+	glDisable (GL_BLEND);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+#else
+	D_EndParticles ();
+#endif
 }
 

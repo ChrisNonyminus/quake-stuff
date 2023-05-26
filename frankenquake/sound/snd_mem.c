@@ -1,5 +1,5 @@
 /*
-Copyright (C) 1997-2001 Id Software, Inc.
+Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -19,8 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 // snd_mem.c: sound caching
 
-#include "client.h"
-#include "snd_loc.h"
+#include "quakedef.h"
 
 int			cache_full_cycle;
 
@@ -40,19 +39,19 @@ void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 	int		sample, samplefrac, fracstep;
 	sfxcache_t	*sc;
 	
-	sc = sfx->cache;
+	sc = Cache_Check (&sfx->cache);
 	if (!sc)
 		return;
 
-	stepscale = (float)inrate / dma.speed;	// this is usually 0.5, 1, or 2
+	stepscale = (float)inrate / shm->speed;	// this is usually 0.5, 1, or 2
 
 	outcount = sc->length / stepscale;
 	sc->length = outcount;
 	if (sc->loopstart != -1)
 		sc->loopstart = sc->loopstart / stepscale;
 
-	sc->speed = dma.speed;
-	if (s_loadas8bit->value)
+	sc->speed = shm->speed;
+	if (loadas8bit.value)
 		sc->width = 1;
 	else
 		sc->width = inwidth;
@@ -97,64 +96,49 @@ S_LoadSound
 */
 sfxcache_t *S_LoadSound (sfx_t *s)
 {
-    char	namebuffer[MAX_QPATH];
+    char	namebuffer[256];
 	byte	*data;
 	wavinfo_t	info;
 	int		len;
 	float	stepscale;
 	sfxcache_t	*sc;
-	int		size;
-	char	*name;
-
-	if (s->name[0] == '*')
-		return NULL;
+	byte	stackbuf[1*1024];		// avoid dirtying the cache heap
 
 // see if still in memory
-	sc = s->cache;
+	sc = Cache_Check (&s->cache);
 	if (sc)
 		return sc;
 
-//Com_Printf ("S_LoadSound: %x\n", (int)stackbuf);
+//Con_Printf ("S_LoadSound: %x\n", (int)stackbuf);
 // load it in
-	if (s->truename)
-		name = s->truename;
-	else
-		name = s->name;
+    Q_strcpy(namebuffer, "sound/");
+    Q_strcat(namebuffer, s->name);
 
-	if (name[0] == '#')
-		strcpy(namebuffer, &name[1]);
-	else
-		Com_sprintf (namebuffer, sizeof(namebuffer), "sound/%s", name);
+//	Con_Printf ("loading %s\n",namebuffer);
 
-//	Com_Printf ("loading %s\n",namebuffer);
-
-	size = FS_LoadFile (namebuffer, (void **)&data);
+	data = COM_LoadStackFile(namebuffer, stackbuf, sizeof(stackbuf));
 
 	if (!data)
 	{
-		Com_DPrintf ("Couldn't load %s\n", namebuffer);
+		Con_Printf ("Couldn't load %s\n", namebuffer);
 		return NULL;
 	}
 
-	info = GetWavinfo (s->name, data, size);
+	info = GetWavinfo (s->name, data, com_filesize);
 	if (info.channels != 1)
 	{
-		Com_Printf ("%s is a stereo sample\n",s->name);
-		FS_FreeFile (data);
+		Con_Printf ("%s is a stereo sample\n",s->name);
 		return NULL;
 	}
 
-	stepscale = (float)info.rate / dma.speed;	
+	stepscale = (float)info.rate / shm->speed;	
 	len = info.samples / stepscale;
 
 	len = len * info.width * info.channels;
 
-	sc = s->cache = Z_Malloc (len + sizeof(sfxcache_t));
+	sc = Cache_Alloc ( &s->cache, len + sizeof(sfxcache_t), s->name);
 	if (!sc)
-	{
-		FS_FreeFile (data);
 		return NULL;
-	}
 	
 	sc->length = info.samples;
 	sc->loopstart = info.loopstart;
@@ -163,8 +147,6 @@ sfxcache_t *S_LoadSound (sfx_t *s)
 	sc->stereo = info.channels;
 
 	ResampleSfx (s, sc->speed, sc->width, data + info.dataofs);
-
-	FS_FreeFile (data);
 
 	return sc;
 }
@@ -230,7 +212,7 @@ void FindNextChunk(char *name)
 //			Sys_Error ("FindNextChunk: %i length is past the 1 meg sanity limit", iff_chunk_len);
 		data_p -= 8;
 		last_chunk = data_p + 8 + ( (iff_chunk_len + 1) & ~1 );
-		if (!strncmp(data_p, name, 4))
+		if (!Q_strncmp(data_p, name, 4))
 			return;
 	}
 }
@@ -253,7 +235,7 @@ void DumpChunks(void)
 		memcpy (str, data_p, 4);
 		data_p += 4;
 		iff_chunk_len = GetLittleLong();
-		Com_Printf ("0x%x : %s (%d)\n", (int)(data_p - 4), str, iff_chunk_len);
+		Con_Printf ("0x%x : %s (%d)\n", (int)(data_p - 4), str, iff_chunk_len);
 		data_p += (iff_chunk_len + 1) & ~1;
 	} while (data_p < iff_end);
 }
@@ -280,9 +262,9 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 
 // find "RIFF" chunk
 	FindChunk("RIFF");
-	if (!(data_p && !strncmp(data_p+8, "WAVE", 4)))
+	if (!(data_p && !Q_strncmp(data_p+8, "WAVE", 4)))
 	{
-		Com_Printf("Missing RIFF/WAVE chunks\n");
+		Con_Printf("Missing RIFF/WAVE chunks\n");
 		return info;
 	}
 
@@ -293,14 +275,14 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	FindChunk("fmt ");
 	if (!data_p)
 	{
-		Com_Printf("Missing fmt chunk\n");
+		Con_Printf("Missing fmt chunk\n");
 		return info;
 	}
 	data_p += 8;
 	format = GetLittleShort();
 	if (format != 1)
 	{
-		Com_Printf("Microsoft PCM format only\n");
+		Con_Printf("Microsoft PCM format only\n");
 		return info;
 	}
 
@@ -315,7 +297,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	{
 		data_p += 32;
 		info.loopstart = GetLittleLong();
-//		Com_Printf("loopstart=%d\n", sfx->loopstart);
+//		Con_Printf("loopstart=%d\n", sfx->loopstart);
 
 	// if the next chunk is a LIST chunk, look for a cue length marker
 		FindNextChunk ("LIST");
@@ -326,7 +308,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 				data_p += 24;
 				i = GetLittleLong ();	// samples in loop
 				info.samples = info.loopstart + i;
-//				Com_Printf("looped length: %i\n", i);
+//				Con_Printf("looped length: %i\n", i);
 			}
 		}
 	}
@@ -337,7 +319,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	FindChunk("data");
 	if (!data_p)
 	{
-		Com_Printf("Missing data chunk\n");
+		Con_Printf("Missing data chunk\n");
 		return info;
 	}
 
@@ -347,7 +329,7 @@ wavinfo_t GetWavinfo (char *name, byte *wav, int wavlength)
 	if (info.samples)
 	{
 		if (samples < info.samples)
-			Com_Error (ERR_DROP, "Sound %s has a bad loop length", name);
+			Sys_Error ("Sound %s has a bad loop length", name);
 	}
 	else
 		info.samples = samples;

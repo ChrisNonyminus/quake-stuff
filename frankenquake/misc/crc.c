@@ -1,5 +1,5 @@
 /*
-Copyright (C) 1997-2001 Id Software, Inc.
+Copyright (C) 1996-1997 Id Software, Inc.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -19,7 +19,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 /* crc.c */
 
-#include "qcommon.h"
+#include "quakedef.h"
+#include "crc.h"
 
 // this is a 16 bit, non-reflected CRC using the polynomial 0x1021
 // and the initial and final xor values shown below...  in other words, the
@@ -78,15 +79,3 @@ unsigned short CRC_Value(unsigned short crcvalue)
 {
 	return crcvalue ^ CRC_XOR_VALUE;
 }
-
-unsigned short CRC_Block (byte *start, int count)
-{
-	unsigned short	crc;
-
-	CRC_Init (&crc);
-	while (count--)
-		crc = (crc << 8) ^ crctable[(crc >> 8) ^ *start++];
-
-	return crc;
-}
-

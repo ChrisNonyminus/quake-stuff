@@ -34,10 +34,10 @@ int		lightmap_textures;
 
 unsigned		blocklights[18*18];
 
-#define	BLOCK_WIDTH		128
-#define	BLOCK_HEIGHT	128
+#define	BLOCK_WIDTH		64
+#define	BLOCK_HEIGHT	64
 
-#define	MAX_LIGHTMAPS	64
+#define	MAX_LIGHTMAPS	16
 int			active_lightmaps;
 
 typedef struct glRect_s {
@@ -441,9 +441,9 @@ void R_DrawSequentialPoly (msurface_t *s)
 			{
 				lightmap_modified[i] = false;
 				theRect = &lightmap_rectchange[i];
-				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, 
-					BLOCK_WIDTH, theRect->h, gl_lightmap_format, GL_UNSIGNED_BYTE,
-					lightmaps+(i* BLOCK_HEIGHT + theRect->t) *BLOCK_WIDTH*lightmap_bytes);
+				// glTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, 
+				// 	BLOCK_WIDTH, theRect->h, gl_lightmap_format, GL_UNSIGNED_BYTE,
+				// 	lightmaps+(i* BLOCK_HEIGHT + theRect->t) *BLOCK_WIDTH*lightmap_bytes);
 				theRect->l = BLOCK_WIDTH;
 				theRect->t = BLOCK_HEIGHT;
 				theRect->h = 0;
@@ -543,9 +543,9 @@ void R_DrawSequentialPoly (msurface_t *s)
 		{
 			lightmap_modified[i] = false;
 			theRect = &lightmap_rectchange[i];
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, 
-				BLOCK_WIDTH, theRect->h, gl_lightmap_format, GL_UNSIGNED_BYTE,
-				lightmaps+(i* BLOCK_HEIGHT + theRect->t) *BLOCK_WIDTH*lightmap_bytes);
+			// glTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, 
+			// 	BLOCK_WIDTH, theRect->h, gl_lightmap_format, GL_UNSIGNED_BYTE,
+			// 	lightmaps+(i* BLOCK_HEIGHT + theRect->t) *BLOCK_WIDTH*lightmap_bytes);
 			theRect->l = BLOCK_WIDTH;
 			theRect->t = BLOCK_HEIGHT;
 			theRect->h = 0;
@@ -708,9 +708,9 @@ void R_BlendLightmaps (void)
 //			glTexImage2D (GL_TEXTURE_2D, 0, lightmap_bytes
 //				, BLOCK_WIDTH, theRect->h, 0, 
 //				gl_lightmap_format, GL_UNSIGNED_BYTE, lightmaps+(i*BLOCK_HEIGHT+theRect->t)*BLOCK_WIDTH*lightmap_bytes);
-			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, 
-				BLOCK_WIDTH, theRect->h, gl_lightmap_format, GL_UNSIGNED_BYTE,
-				lightmaps+(i* BLOCK_HEIGHT + theRect->t) *BLOCK_WIDTH*lightmap_bytes);
+			// glTexSubImage2D(GL_TEXTURE_2D, 0, 0, theRect->t, 
+			// 	BLOCK_WIDTH, theRect->h, gl_lightmap_format, GL_UNSIGNED_BYTE,
+			// 	lightmaps+(i* BLOCK_HEIGHT + theRect->t) *BLOCK_WIDTH*lightmap_bytes);
 			theRect->l = BLOCK_WIDTH;
 			theRect->t = BLOCK_HEIGHT;
 			theRect->h = 0;
@@ -1018,6 +1018,7 @@ void R_DrawWaterSurfaces (void)
 
 #endif
 
+void R_DrawSkyChain (msurface_t *s);
 /*
 ================
 DrawTextureChains
@@ -1436,6 +1437,7 @@ int AllocBlock (int w, int h, int *x, int *y)
 	}
 
 	Sys_Error ("AllocBlock: full");
+	return -1;
 }
 
 

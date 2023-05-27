@@ -411,6 +411,7 @@ void CL_ParseUpdate(int bits)
     qboolean forcelink;
     entity_t *ent;
     int num;
+	int			skin;
 
     if (cls.signon == SIGNONS - 1)
     { // first update is the final signon stage
@@ -503,7 +504,7 @@ void CL_ParseUpdate(int bits)
     }
 
 #else
-
+    skin = 0; skin = skin; // unused variable
     if (bits & U_SKIN)
         ent->skinnum = MSG_ReadByte();
     else

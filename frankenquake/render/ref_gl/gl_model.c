@@ -748,7 +748,7 @@ void CalcSurfaceExtents (msurface_t *s)
 	}
 }
 
-
+void GL_SubdivideSurface (msurface_t *fa);
 /*
 =================
 Mod_LoadFaces
@@ -1480,7 +1480,7 @@ void *Mod_LoadAllSkins (int numskins, daliasskintype_t *pskintype)
 }
 
 //=========================================================================
-
+void GL_MakeAliasModelDisplayLists (model_t *m, aliashdr_t *hdr);
 /*
 =================
 Mod_LoadAliasModel

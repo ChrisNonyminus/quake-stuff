@@ -624,7 +624,7 @@ void SCR_ScreenShot_f (void)
 	buffer[15] = glheight>>8;
 	buffer[16] = 24;	// pixel size
 
-	glReadPixels (glx, gly, glwidth, glheight, GL_RGB, GL_UNSIGNED_BYTE, buffer+18 ); 
+	//glReadPixels (glx, gly, glwidth, glheight, GL_RGB, GL_UNSIGNED_BYTE, buffer+18 ); 
 
 	// swap rgb to bgr
 	c = 18+glwidth*glheight*3;
@@ -872,7 +872,7 @@ void SCR_UpdateScreen (void)
 	SCR_SetUpToDrawConsole ();
 	
 	V_RenderView ();
-
+	void GL_Set2D (void);
 	GL_Set2D ();
 
 	//

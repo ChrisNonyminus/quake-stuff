@@ -21,7 +21,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // based on https://github.com/ahefner/sdlquake/blob/master/vid_sdl.c
 
-#include <SDL.h>
+#include <libdragon.h>
+#include <GL/gl.h>
+#include <GL/glu.h>
+#include <GL/gl_integration.h>
 
 #include "quakedef.h"
 
@@ -29,110 +32,209 @@ extern viddef_t vid; // global video state
 
 #define BASEWIDTH 320
 #define BASEHEIGHT 240
+int		texture_mode = GL_NEAREST;
+//int		texture_mode = GL_NEAREST_MIPMAP_NEAREST;
+//int		texture_mode = GL_NEAREST_MIPMAP_LINEAR;
+//int		texture_mode = GL_LINEAR;
+//int		texture_mode = GL_LINEAR_MIPMAP_NEAREST;
+//int		texture_mode = GL_LINEAR_MIPMAP_LINEAR;
 
-static SDL_Surface *sdlscreen = NULL;
-static SDL_Surface *sdlblit = NULL;
-static SDL_Renderer *sdlrenderer = NULL;
-static SDL_Window *sdlwindow = NULL;
+int scr_width = BASEWIDTH, scr_height = BASEHEIGHT;
 
 extern short *d_pzbuffer;
 
-short zbuffer[BASEWIDTH * BASEHEIGHT];
+float		gldepthmin, gldepthmax;
+static surface_t zbuffer;
 
 byte *surfcache;
 
-unsigned short d_8to16table[256];
-unsigned d_8to24table[256];
+unsigned short	d_8to16table[256];
+unsigned	d_8to24table[256];
+unsigned char d_15to8table[65536];
+int		texture_extension_number = 0;
+qboolean is8bit = false;
+qboolean isPermedia = false;
+qboolean gl_mtexable = false;
+
+
+const char *gl_vendor;
+const char *gl_renderer;
+const char *gl_version;
+const char *gl_extensions;
+
+cvar_t	gl_ztrick = {"gl_ztrick","1"};
+
+
+/*
+=================
+GL_BeginRendering
+
+=================
+*/
+void GL_BeginRendering (int *x, int *y, int *width, int *height)
+{
+	extern cvar_t gl_clear;
+
+	*x = *y = 0;
+	*width = scr_width;
+	*height = scr_height;
+
+    surface_t *disp = display_get();
+    rdpq_attach(disp, &zbuffer);
+
+    gl_context_begin();
+
+//    if (!wglMakeCurrent( maindc, baseRC ))
+//		Sys_Error ("wglMakeCurrent failed");
+
+//	glViewport (*x, *y, *width, *height);
+glViewport (*x, *y, *width, *height);
+}
+
+
+void GL_EndRendering (void)
+{
+	glFlush();
+    gl_context_end();
+
+    rdpq_detach_show();
+}
 
 void VID_SetPalette(unsigned char *palette)
 {
-    int i;
-    SDL_Color colors[256];
+	byte	*pal;
+	unsigned r,g,b;
+	unsigned v;
+	int     r1,g1,b1;
+	int		j,k,l,m;
+	unsigned short i;
+	unsigned	*table;
+	FILE *f;
+	char s[255];
+	int dist, bestdist;
+	static qboolean palflag = false;
 
-    for (i = 0; i < 256; ++i)
-    {
-        colors[i].r = *palette++;
-        colors[i].g = *palette++;
-        colors[i].b = *palette++;
-    }
-    SDL_SetPaletteColors(sdlblit->format->palette, colors, 0, 256);
+//
+// 8 8 8 encoding
+//
+	pal = palette;
+	table = d_8to24table;
+	for (i=0 ; i<256 ; i++)
+	{
+		r = pal[0];
+		g = pal[1];
+		b = pal[2];
+		pal += 3;
+		
+		v = (255<<24) + (r<<0) + (g<<8) + (b<<16);
+		*table++ = v;
+	}
+	d_8to24table[255] &= 0xffffff;	// 255 is transparent
+
+	// JACK: 3D distance calcs - k is last closest, l is the distance.
+	for (i=0; i < (1<<15); i++) {
+		/* Maps
+		000000000000000
+		000000000011111 = Red  = 0x1F
+		000001111100000 = Blue = 0x03E0
+		111110000000000 = Grn  = 0x7C00
+		*/
+		r = ((i & 0x1F) << 3)+4;
+		g = ((i & 0x03E0) >> 2)+4;
+		b = ((i & 0x7C00) >> 7)+4;
+		pal = (unsigned char *)d_8to24table;
+		for (v=0,k=0,bestdist=10000*10000; v<256; v++,pal+=4) {
+			r1 = (int)r - (int)pal[0];
+			g1 = (int)g - (int)pal[1];
+			b1 = (int)b - (int)pal[2];
+			dist = (r1*r1)+(g1*g1)+(b1*b1);
+			if (dist < bestdist) {
+				k=v;
+				bestdist = dist;
+			}
+		}
+		d_15to8table[i]=k;
+	}
 }
 
 void VID_ShiftPalette(unsigned char *palette) { VID_SetPalette(palette); }
 
+/*
+===============
+GL_Init
+===============
+*/
+void GL_Init (void)
+{
+    rdpq_init();
+    rdpq_debug_start();
+    rdpq_debug_log(true);
+    gl_init();
+
+	gl_vendor = (const char*)glGetString (GL_VENDOR);
+	Con_Printf ("GL_VENDOR: %s\n", gl_vendor);
+	gl_renderer = (const char*)glGetString (GL_RENDERER);
+	Con_Printf ("GL_RENDERER: %s\n", gl_renderer);
+
+	gl_version = (const char*)glGetString (GL_VERSION);
+	Con_Printf ("GL_VERSION: %s\n", gl_version);
+	gl_extensions = (const char*)glGetString (GL_EXTENSIONS);
+	Con_Printf ("GL_EXTENSIONS: %s\n", gl_extensions);
+
+//	Con_Printf ("%s %s\n", gl_renderer, gl_version);
+
+	//CheckMultiTextureExtensions ();
+
+	glClearColor (1,0,0,0);
+	glCullFace(GL_FRONT);
+	glEnable(GL_TEXTURE_2D);
+
+	glEnable(GL_ALPHA_TEST);
+	glAlphaFunc(GL_GREATER, 0.666);
+
+	glPolygonMode (GL_FRONT_AND_BACK, GL_FILL);
+	glShadeModel (GL_FLAT);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glBlendFunc (GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+//	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
+    zbuffer = surface_alloc(FMT_RGBA16, display_get_width(), display_get_height());
+}
 void VID_Init(unsigned char *palette)
 {
-    if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0)
-    {
-        Sys_Error("Error initializing SDL_VIDEO: %s\n", SDL_GetError());
-    }
-
-    if (!(sdlwindow = SDL_CreateWindow("QUAKE", SDL_WINDOWPOS_CENTERED,
-                                       SDL_WINDOWPOS_CENTERED, BASEWIDTH,
-                                       BASEHEIGHT, 0)) ||
-        !(sdlrenderer = SDL_CreateRenderer(sdlwindow, -1, 0)))
-    {
-        Sys_Error("Error in SDL_CreateWindowAndRenderer: %s\n", SDL_GetError());
-    }
-    SDL_RendererInfo rendererInfo;
-    if (!SDL_GetRendererInfo(sdlrenderer, &rendererInfo))
-        printf("Using SDL renderer: %s\n", rendererInfo.name);
-    sdlscreen = SDL_GetWindowSurface(sdlwindow);
-    vid.maxwarpwidth = vid.width = vid.conwidth = BASEWIDTH;
-    vid.maxwarpheight = vid.height = vid.conheight = BASEHEIGHT;
-    vid.aspect = vid.width / vid.height;
-    vid.numpages = 1;
-    vid.colormap = host_colormap;
-    vid.fullbright = 256 - LittleLong(*((int *)vid.colormap + 2048));
-
-    sdlblit = SDL_CreateRGBSurfaceWithFormat(0, vid.width, vid.height, 8,
-                                             SDL_PIXELFORMAT_INDEX8);
-    vid.buffer = vid.conbuffer = sdlblit->pixels;
-    vid.rowbytes = vid.conrowbytes = BASEWIDTH;
-
-    d_pzbuffer = zbuffer;
-    surfcache = malloc(D_SurfaceCacheForRes(vid.width, vid.height));
-    D_InitCaches(surfcache, D_SurfaceCacheForRes(vid.width, vid.height));
+    display_init(RESOLUTION_320x240, DEPTH_16_BPP, 2, GAMMA_NONE, ANTIALIAS_RESAMPLE_FETCH_ALWAYS);
+    
+	Cvar_RegisterVariable (&gl_ztrick);
+    
+	
+	vid.maxwarpwidth = 320;
+	vid.maxwarpheight = 200;
+	vid.colormap = host_colormap;
+	vid.fullbright = 256 - LittleLong (*((int *)vid.colormap + 2048));
+    vid.rowbytes = vid.width = vid.conwidth = BASEWIDTH;
+    vid.height = vid.conheight = BASEHEIGHT;
+    vid.aspect = ((float)vid.height / (float)vid.width) *
+				(320.0 / 240.0);
+	vid.numpages = 2;
+    GL_Init();
+	vid.recalc_refdef = 1;				// force a surface cache flush
 }
+
+
 
 void VID_Shutdown(void)
 {
-    SDL_DestroyRenderer(sdlrenderer);
-    SDL_DestroyWindow(sdlwindow);
-    SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 void Hunk_Print(qboolean all);
-static SDL_Texture *sdltexture = NULL;
 void VID_Update(vrect_t *rects)
 {
-    SDL_Rect *sdlrects;
-    int n, i;
-    vrect_t *rect;
 
-    // Two-pass system, since Quake doesn't do it the SDL way...
-
-    // First, count the number of rectangles
-    n = 0;
-    for (rect = rects; rect; rect = rect->pnext)
-        ++n;
-
-    // Second, copy them to SDL rectangles and update
-    if (!(sdlrects = (SDL_Rect *)alloca(n * sizeof(*sdlrects))))
-        Sys_Error("Out of memory");
-    i = 0;
-    for (rect = rects; rect; rect = rect->pnext)
-    {
-        sdlrects[i].x = rect->x;
-        sdlrects[i].y = rect->y;
-        sdlrects[i].w = rect->width;
-        sdlrects[i].h = rect->height;
-        ++i;
-    }
-    // Hunk_Print(true);
-    sdltexture = SDL_CreateTextureFromSurface(sdlrenderer, sdlblit);
-    SDL_RenderCopy(sdlrenderer, sdltexture, NULL, sdlrects);
-    SDL_DestroyTexture(sdltexture);
-    SDL_RenderPresent(sdlrenderer);
 }
 
 /*
@@ -142,19 +244,7 @@ D_BeginDirectRect
 */
 void D_BeginDirectRect(int x, int y, byte *pbitmap, int width, int height)
 {
-    Uint8 *offset;
 
-    if (!sdlblit)
-        return;
-    if (x < 0)
-        x = sdlblit->w + x - 1;
-    offset = (Uint8 *)sdlblit->pixels + y * sdlblit->pitch + x;
-    while (height--)
-    {
-        memcpy(offset, pbitmap, width);
-        offset += sdlblit->pitch;
-        pbitmap += width;
-    }
 }
 
 /*
@@ -164,14 +254,5 @@ D_EndDirectRect
 */
 void D_EndDirectRect(int x, int y, int width, int height)
 {
-    if (!sdlscreen)
-    {
 
-        return;
-    }
-    // SDL_RenderClear(sdlrenderer);
-    //  sdltexture = SDL_CreateTextureFromSurface(sdlrenderer, sdlblit);
-    //  SDL_RenderCopy(sdlrenderer, sdltexture, NULL, NULL);
-    //  SDL_DestroyTexture(sdltexture);
-    //  SDL_RenderPresent(sdlrenderer);
 }

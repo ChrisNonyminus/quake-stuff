@@ -436,7 +436,7 @@ void R_SetupAliasFrame (int frame, aliashdr_t *paliashdr)
 }
 
 
-
+int R_LightPoint (vec3_t p);
 /*
 =================
 R_DrawAliasModel
@@ -563,16 +563,16 @@ void R_DrawAliasModel (entity_t *e)
 		glShadeModel (GL_SMOOTH);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-	if (gl_affinemodels.value)
-		glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
+	// if (gl_affinemodels.value)
+	// 	glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_FASTEST);
 
 	R_SetupAliasFrame (currententity->frame, paliashdr);
 
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
 	glShadeModel (GL_FLAT);
-	if (gl_affinemodels.value)
-		glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
+	// if (gl_affinemodels.value)
+	// 	glHint (GL_PERSPECTIVE_CORRECTION_HINT, GL_NICEST);
 
 	glPopMatrix ();
 
@@ -591,7 +591,7 @@ void R_DrawAliasModel (entity_t *e)
 	}
 
 }
-
+void R_DrawBrushModel (entity_t *e);
 //==================================================================================
 
 /*
@@ -635,6 +635,7 @@ void R_DrawEntitiesOnList (void)
 		case mod_sprite:
 			R_DrawSpriteModel (currententity);
 			break;
+		default: break;
 		}
 	}
 }
@@ -938,7 +939,6 @@ void R_SetupGL (void)
 	glDisable(GL_ALPHA_TEST);
 	glEnable(GL_DEPTH_TEST);
 }
-
 /*
 ================
 R_RenderScene
@@ -1103,7 +1103,7 @@ r_refdef must be set before the first call
 */
 void R_RenderView (void)
 {
-	double	time1, time2;
+	double	time1 =0, time2= 0;
 	GLfloat colors[4] = {(GLfloat) 0.0, (GLfloat) 0.0, (GLfloat) 1, (GLfloat) 0.20};
 
 	if (r_norefresh.value)

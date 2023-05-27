@@ -3,9 +3,18 @@ D=1
 SOURCE_DIR=frankenquake
 BUILD_DIR=frankenquake/sys/n64/build
 include $(N64_INST)/include/n64.mk
-include libs/sdl_n64/SDL2/Makefile_sdl2.mk
 
-SOURCES := frankenquake/client frankenquake/console frankenquake/misc frankenquake/misc frankenquake/network frankenquake/progs frankenquake/qcommon frankenquake/render/ref_soft frankenquake/server frankenquake/sound frankenquake/sys/n64
+SOURCES := frankenquake/client \
+frankenquake/console \
+frankenquake/misc \
+frankenquake/misc \
+frankenquake/network\
+ frankenquake/progs\
+ frankenquake/qcommon\
+ frankenquake/render/ref_gl\
+ frankenquake/server\
+ frankenquake/sound \
+frankenquake/sys/n64
 
 all: quake.z64
 .PHONY: all
@@ -13,10 +22,12 @@ all: quake.z64
 $(BUILD_DIR)/quake.dfs: $(wildcard frankenquake/sys/n64/filesystem/id1/*)
 	$(N64_MKDFS) $@ frankenquake/sys/n64/filesystem
 CFILES  := $(foreach dir,$(SOURCES),$(wildcard $(dir)/*.c))
-OBJS		:=	$(patsubst %.c,$(BUILD_DIR)/%.o,$(CFILES)) $(patsubst %.c,%.o,$(C_SDL_FILES)) 
+OBJS		:=	$(patsubst %.c,$(BUILD_DIR)/%.o,$(CFILES))
 
-CFLAGS += $(foreach dir,$(SOURCES),-I$(dir)) -std=c9x -Wno-error=format-overflow -Wno-error=dangling-pointer -Wno-error=strict-aliasing -Wno-error=aggressive-loop-optimizations
-CFLAGS += -ffast-math -DLIBDRAGON_FAST_MATH
+CFLAGS += $(foreach dir,$(SOURCES),-I$(dir)) -std=c9x 
+CFLAGS += -Wno-error=format-overflow -Wno-error=dangling-pointer -Wno-error=strict-aliasing -Wno-error=aggressive-loop-optimizations
+CFLAGS += -Wno-error=unused-variable -Wno-error=unused-but-set-variable -Wno-unused-variable -Wno-unused-but-set-variable
+CFLAGS += -ffast-math -DLIBDRAGON_FAST_MATH -DGLQUAKE
 
 $(BUILD_DIR)/%.o: %.c 
 	@mkdir -p $(dir $@)

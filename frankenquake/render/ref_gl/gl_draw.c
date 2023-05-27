@@ -27,8 +27,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern unsigned char d_15to8table[65536];
 
-cvar_t		gl_nobind = {"gl_nobind", "0"};
-cvar_t		gl_max_size = {"gl_max_size", "1024"};
+cvar_t		gl_nobind = {"gl_nobind", "1"};
+cvar_t		gl_max_size = {"gl_max_size", "32"};
 cvar_t		gl_picmip = {"gl_picmip", "0"};
 
 byte		*draw_chars;				// 8*8 graphic characters
@@ -145,6 +145,7 @@ int Scrap_AllocBlock (int w, int h, int *x, int *y)
 	}
 
 	Sys_Error ("Scrap_AllocBlock: full");
+	return 0;
 }
 
 int	scrap_uploads;
@@ -161,7 +162,7 @@ void Scrap_Upload (void)
 	}
 	scrap_dirty = false;
 }
-
+int GL_LoadPicTexture (qpic_t *pic);
 //=============================================================================
 /* Support Routines */
 
@@ -808,9 +809,9 @@ void Draw_BeginDisc (void)
 {
 	if (!draw_disc)
 		return;
-	glDrawBuffer  (GL_FRONT);
+	//glDrawBuffer  (GL_FRONT);
 	Draw_Pic (vid.width - 24, 0, draw_disc);
-	glDrawBuffer  (GL_BACK);
+	//glDrawBuffer  (GL_BACK);
 }
 
 
@@ -1004,7 +1005,7 @@ GL_Upload32
 void GL_Upload32 (unsigned *data, int width, int height,  qboolean mipmap, qboolean alpha)
 {
 	int			samples;
-static	unsigned	scaled[1024*512];	// [512*256];
+static	unsigned	scaled[64*32];
 	int			scaled_width, scaled_height;
 
 	for (scaled_width = 1 ; scaled_width < width ; scaled_width<<=1)
@@ -1093,7 +1094,7 @@ void GL_Upload8_EXT (byte *data, int width, int height,  qboolean mipmap, qboole
 	int			p;
 	static unsigned j;
 	int			samples;
-    static	unsigned char scaled[1024*512];	// [512*256];
+    static	unsigned char scaled[64*32];
 	int			scaled_width, scaled_height;
 
 	s = width*height;
@@ -1135,7 +1136,7 @@ void GL_Upload8_EXT (byte *data, int width, int height,  qboolean mipmap, qboole
 	{
 		if (!mipmap)
 		{
-			glTexImage2D (GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX , GL_UNSIGNED_BYTE, data);
+			//glTexImage2D (GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX , GL_UNSIGNED_BYTE, data);
 			goto done;
 		}
 		memcpy (scaled, data, width*height);
@@ -1143,7 +1144,7 @@ void GL_Upload8_EXT (byte *data, int width, int height,  qboolean mipmap, qboole
 	else
 		GL_Resample8BitTexture (data, width, height, scaled, scaled_width, scaled_height);
 
-	glTexImage2D (GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, scaled);
+	//glTexImage2D (GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, scaled);
 	if (mipmap)
 	{
 		int		miplevel;
@@ -1159,7 +1160,7 @@ void GL_Upload8_EXT (byte *data, int width, int height,  qboolean mipmap, qboole
 			if (scaled_height < 1)
 				scaled_height = 1;
 			miplevel++;
-			glTexImage2D (GL_TEXTURE_2D, miplevel, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, scaled);
+			//glTexImage2D (GL_TEXTURE_2D, miplevel, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, scaled);
 		}
 	}
 done: ;
@@ -1184,7 +1185,7 @@ GL_Upload8
 */
 void GL_Upload8 (byte *data, int width, int height,  qboolean mipmap, qboolean alpha)
 {
-static	unsigned	trans[640*480];		// FIXME, temporary
+static	unsigned	trans[320*240];		// FIXME, temporary
 	int			i, s;
 	qboolean	noalpha;
 	int			p;
@@ -1219,7 +1220,7 @@ static	unsigned	trans[640*480];		// FIXME, temporary
 		}
 	}
 
- 	if (VID_Is8bit() && !alpha && (data!=scrap_texels[0])) {
+ 	if (/*VID_Is8bit() && */!alpha && (data!=scrap_texels[0])) {
  		GL_Upload8_EXT (data, width, height, mipmap, alpha);
  		return;
 	}

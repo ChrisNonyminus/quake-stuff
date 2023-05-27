@@ -183,14 +183,14 @@ void Sys_Printf(char *fmt, ...)
 }
 
 void Sys_Quit(void) { exit(0); }
-
+static double ft = 0;
 double Sys_FloatTime(void)
 {
-    static double t = 0;
+    return ft;
+}
 
-    t += 0.1;
-
-    return t;
+void UpdateFloatTime() {
+    ft += 0.001;
 }
 
 char *Sys_ConsoleInput(void) { return NULL; }
@@ -437,6 +437,7 @@ int main(int argc, char **argv)
         printf("Error initializing SDL: %s\n", SDL_GetError());
         return 1;
     }
+    new_timer(TIMER_TICKS(1000), TF_CONTINUOUS, UpdateFloatTime);
 
     parms.memsize = 3005000;
     parms.membase = malloc(parms.memsize);

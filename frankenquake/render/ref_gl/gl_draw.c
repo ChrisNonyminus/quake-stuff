@@ -511,7 +511,6 @@ void Draw_Character (int x, int y, int num)
 	
 	if (y <= -8)
 		return;			// totally off screen
-
 	row = num>>4;
 	col = num&15;
 
@@ -1136,7 +1135,7 @@ void GL_Upload8_EXT (byte *data, int width, int height,  qboolean mipmap, qboole
 	{
 		if (!mipmap)
 		{
-			//glTexImage2D (GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX , GL_UNSIGNED_BYTE, data);
+			glTexImage2D (GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX , GL_UNSIGNED_BYTE, data);
 			goto done;
 		}
 		memcpy (scaled, data, width*height);
@@ -1144,7 +1143,7 @@ void GL_Upload8_EXT (byte *data, int width, int height,  qboolean mipmap, qboole
 	else
 		GL_Resample8BitTexture (data, width, height, scaled, scaled_width, scaled_height);
 
-	//glTexImage2D (GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, scaled);
+	glTexImage2D (GL_TEXTURE_2D, 0, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, scaled);
 	if (mipmap)
 	{
 		int		miplevel;
@@ -1160,7 +1159,7 @@ void GL_Upload8_EXT (byte *data, int width, int height,  qboolean mipmap, qboole
 			if (scaled_height < 1)
 				scaled_height = 1;
 			miplevel++;
-			//glTexImage2D (GL_TEXTURE_2D, miplevel, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, scaled);
+			glTexImage2D (GL_TEXTURE_2D, miplevel, GL_COLOR_INDEX8_EXT, scaled_width, scaled_height, 0, GL_COLOR_INDEX, GL_UNSIGNED_BYTE, scaled);
 		}
 	}
 done: ;
@@ -1177,7 +1176,7 @@ done: ;
 		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_max);
 	}
 }
-
+qboolean VID_Is8bit(void);
 /*
 ===============
 GL_Upload8
@@ -1220,7 +1219,7 @@ static	unsigned	trans[320*240];		// FIXME, temporary
 		}
 	}
 
- 	if (/*VID_Is8bit() && */!alpha && (data!=scrap_texels[0])) {
+ 	if (VID_Is8bit()  && !alpha && (data!=scrap_texels[0])) {
  		GL_Upload8_EXT (data, width, height, mipmap, alpha);
  		return;
 	}

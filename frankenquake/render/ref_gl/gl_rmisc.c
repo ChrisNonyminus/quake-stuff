@@ -227,6 +227,7 @@ R_TranslatePlayerSkin
 Translates a skin texture by the per-player color lookup
 ===============
 */
+qboolean VID_Is8bit(void);
 void R_TranslatePlayerSkin (int playernum)
 {
 	int		top, bottom;
@@ -313,7 +314,7 @@ void R_TranslatePlayerSkin (int playernum)
 	scaled_width >>= (int)gl_playermip.value;
 	scaled_height >>= (int)gl_playermip.value;
 
-	if (/*VID_Is8bit()*/1) { // 8bit texture upload
+	if (VID_Is8bit()) { // 8bit texture upload
 		byte *out2;
 
 		out2 = (byte *)pixels;

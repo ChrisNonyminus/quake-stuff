@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 // based on https://github.com/ahefner/sdlquake/blob/master/vid_sdl.c
 
 #include <SDL.h>
+#include <libdragon.h>
 
 #include "quakedef.h"
 
@@ -44,6 +45,8 @@ byte *surfcache;
 unsigned short d_8to16table[256];
 unsigned d_8to24table[256];
 
+static uint16_t libdragon_palette[256];
+
 void VID_SetPalette(unsigned char *palette)
 {
     int i;
@@ -54,6 +57,8 @@ void VID_SetPalette(unsigned char *palette)
         colors[i].r = *palette++;
         colors[i].g = *palette++;
         colors[i].b = *palette++;
+
+		libdragon_palette[i] = color_to_packed16(RGBA32(colors[i].r, colors[i].g, colors[i].b, 0));
     }
     SDL_SetPaletteColors(sdlblit->format->palette, colors, 0, 256);
 }
@@ -102,7 +107,6 @@ void VID_Shutdown(void)
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
 void Hunk_Print(qboolean all);
-static SDL_Texture *sdltexture = NULL;
 void VID_Update(vrect_t *rects)
 {
     SDL_Rect *sdlrects;
@@ -128,11 +132,17 @@ void VID_Update(vrect_t *rects)
         sdlrects[i].h = rect->height;
         ++i;
     }
-    // Hunk_Print(true);
-    sdltexture = SDL_CreateTextureFromSurface(sdlrenderer, sdlblit);
-    SDL_RenderCopy(sdlrenderer, sdltexture, NULL, sdlrects);
-    SDL_DestroyTexture(sdltexture);
-    SDL_RenderPresent(sdlrenderer);
+	rdpq_set_mode_copy(false);
+	rdpq_mode_tlut(TLUT_RGBA16);
+	rdpq_tex_load_tlut(libdragon_palette, 0, 256);
+
+    surface_t *disp = display_get();
+    rdpq_attach(disp, NULL);
+
+	surface_t temp = surface_make_linear(sdlblit->pixels, FMT_CI8, 320, 240);
+	rdpq_tex_blit(&temp, 0, 0, NULL);
+
+	rdpq_detach_show();
 }
 
 /*

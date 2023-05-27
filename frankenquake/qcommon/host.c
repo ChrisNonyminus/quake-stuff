@@ -523,13 +523,8 @@ qboolean Host_FilterTime (float time)
 		host_frametime = host_framerate.value;
 	else
 	{	// don't allow really long or short frames
-// >>> FIX: For Nintendo DS using devkitARM
-// Temporarily let frames exceed the original limits:
-		//if (host_frametime > 0.1)
-		//	host_frametime = 0.1;
-		if (host_frametime > 1.0)
-			host_frametime = 1.0;
-// <<< FIX
+		if (host_frametime > 0.1)
+			host_frametime = 0.1;
 		if (host_frametime < 0.001)
 			host_frametime = 0.001;
 	}

@@ -427,8 +427,8 @@ int main(int argc, char **argv)
 
 
     debug_init(DEBUG_FEATURE_ALL);
-    console_init();
-	console_set_render_mode(RENDER_MANUAL);
+    // console_init();
+	// console_set_render_mode(RENDER_MANUAL);
     int ret = dfs_init(DFS_DEFAULT_LOCATION);
 	assert(ret == DFS_ESUCCESS);
 
@@ -438,7 +438,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    parms.memsize = 3005000;
+    parms.memsize = (4 * 1024 * 1024);
     parms.membase = malloc(parms.memsize);
     //COM_AddGameDirectory("sd:/quake");
 

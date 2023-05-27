@@ -184,13 +184,13 @@ void Sys_Printf(char *fmt, ...)
 
 void Sys_Quit(void) { exit(0); }
 
+static volatile double ft = 0;
 double Sys_FloatTime(void)
 {
-    static double t = 0;
-
-    t += 0.1;
-
-    return t;
+    return ft;
+}
+void UpdateFloatTime() {
+    ft += 0.001;
 }
 
 char *Sys_ConsoleInput(void) { return NULL; }
@@ -427,8 +427,8 @@ int main(int argc, char **argv)
 
 
     debug_init(DEBUG_FEATURE_ALL);
-    // console_init();
-	// console_set_render_mode(RENDER_MANUAL);
+    console_init();
+    console_set_render_mode(RENDER_MANUAL); // has to be uncommented for Sys_Printfs to relay to is-viewer
     int ret = dfs_init(DFS_DEFAULT_LOCATION);
 	assert(ret == DFS_ESUCCESS);
 
@@ -437,6 +437,8 @@ int main(int argc, char **argv)
         printf("Error initializing SDL: %s\n", SDL_GetError());
         return 1;
     }
+    new_timer(TIMER_TICKS(1000), TF_CONTINUOUS, UpdateFloatTime);
+
 
     parms.memsize = (4 * 1024 * 1024);
     parms.membase = malloc(parms.memsize);

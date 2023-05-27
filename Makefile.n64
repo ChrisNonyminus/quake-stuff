@@ -1,4 +1,5 @@
 V=1
+D=1
 SOURCE_DIR=frankenquake
 BUILD_DIR=frankenquake/sys/n64/build
 include $(N64_INST)/include/n64.mk
@@ -9,7 +10,7 @@ SOURCES := frankenquake/client frankenquake/console frankenquake/misc frankenqua
 all: quake.z64
 .PHONY: all
 
-$(BUILD_DIR)/quake.dfs: $(wildcard frankenquake/sys/n64/filesystem/*)
+$(BUILD_DIR)/quake.dfs: $(wildcard frankenquake/sys/n64/filesystem/id1/*)
 	$(N64_MKDFS) $@ frankenquake/sys/n64/filesystem
 CFILES  := $(foreach dir,$(SOURCES),$(wildcard $(dir)/*.c))
 OBJS		:=	$(patsubst %.c,$(BUILD_DIR)/%.o,$(CFILES)) $(patsubst %.c,%.o,$(C_SDL_FILES)) 

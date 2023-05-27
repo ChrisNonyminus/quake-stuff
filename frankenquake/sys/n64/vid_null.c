@@ -35,11 +35,11 @@ static SDL_Surface *sdlblit = NULL;
 static SDL_Renderer *sdlrenderer = NULL;
 static SDL_Window *sdlwindow = NULL;
 
-extern short			*d_pzbuffer;
+extern short *d_pzbuffer;
 
-short zbuffer[BASEWIDTH*BASEHEIGHT];
+short zbuffer[BASEWIDTH * BASEHEIGHT];
 
-byte* surfcache;
+byte *surfcache;
 
 unsigned short d_8to16table[256];
 unsigned d_8to24table[256];
@@ -70,13 +70,13 @@ void VID_Init(unsigned char *palette)
     if (!(sdlwindow = SDL_CreateWindow("QUAKE", SDL_WINDOWPOS_CENTERED,
                                        SDL_WINDOWPOS_CENTERED, BASEWIDTH,
                                        BASEHEIGHT, 0)) ||
-                      !(sdlrenderer = SDL_CreateRenderer(sdlwindow, -1, 0)))
+        !(sdlrenderer = SDL_CreateRenderer(sdlwindow, -1, 0)))
     {
         Sys_Error("Error in SDL_CreateWindowAndRenderer: %s\n", SDL_GetError());
     }
-	SDL_RendererInfo rendererInfo;
-	if (!SDL_GetRendererInfo(sdlrenderer, &rendererInfo))
-		printf("Using SDL renderer: %s\n", rendererInfo.name);
+    SDL_RendererInfo rendererInfo;
+    if (!SDL_GetRendererInfo(sdlrenderer, &rendererInfo))
+        printf("Using SDL renderer: %s\n", rendererInfo.name);
     sdlscreen = SDL_GetWindowSurface(sdlwindow);
     vid.maxwarpwidth = vid.width = vid.conwidth = BASEWIDTH;
     vid.maxwarpheight = vid.height = vid.conheight = BASEHEIGHT;
@@ -91,7 +91,7 @@ void VID_Init(unsigned char *palette)
     vid.rowbytes = vid.conrowbytes = BASEWIDTH;
 
     d_pzbuffer = zbuffer;
-	surfcache = malloc(D_SurfaceCacheForRes(vid.width, vid.height));
+    surfcache = malloc(D_SurfaceCacheForRes(vid.width, vid.height));
     D_InitCaches(surfcache, D_SurfaceCacheForRes(vid.width, vid.height));
 }
 
@@ -101,8 +101,8 @@ void VID_Shutdown(void)
     SDL_DestroyWindow(sdlwindow);
     SDL_QuitSubSystem(SDL_INIT_VIDEO);
 }
-void Hunk_Print (qboolean all);
-static SDL_Texture* sdltexture = NULL;
+void Hunk_Print(qboolean all);
+static SDL_Texture *sdltexture = NULL;
 void VID_Update(vrect_t *rects)
 {
     SDL_Rect *sdlrects;
@@ -128,10 +128,10 @@ void VID_Update(vrect_t *rects)
         sdlrects[i].h = rect->height;
         ++i;
     }
-    //Hunk_Print(true);
+    // Hunk_Print(true);
     sdltexture = SDL_CreateTextureFromSurface(sdlrenderer, sdlblit);
-	SDL_RenderCopy(sdlrenderer, sdltexture, NULL, sdlrects);
-	SDL_DestroyTexture(sdltexture);
+    SDL_RenderCopy(sdlrenderer, sdltexture, NULL, sdlrects);
+    SDL_DestroyTexture(sdltexture);
     SDL_RenderPresent(sdlrenderer);
 }
 
@@ -164,13 +164,14 @@ D_EndDirectRect
 */
 void D_EndDirectRect(int x, int y, int width, int height)
 {
-    if (!sdlscreen) {
+    if (!sdlscreen)
+    {
 
         return;
     }
-	//SDL_RenderClear(sdlrenderer);
-    sdltexture = SDL_CreateTextureFromSurface(sdlrenderer, sdlblit);
-	SDL_RenderCopy(sdlrenderer, sdltexture, NULL, NULL);
-	SDL_DestroyTexture(sdltexture);
-    SDL_RenderPresent(sdlrenderer);
+    // SDL_RenderClear(sdlrenderer);
+    //  sdltexture = SDL_CreateTextureFromSurface(sdlrenderer, sdlblit);
+    //  SDL_RenderCopy(sdlrenderer, sdltexture, NULL, NULL);
+    //  SDL_DestroyTexture(sdltexture);
+    //  SDL_RenderPresent(sdlrenderer);
 }

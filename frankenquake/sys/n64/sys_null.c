@@ -186,24 +186,11 @@ void Sys_Quit(void) { exit(0); }
 
 double Sys_FloatTime(void)
 {
-    // static double t = 0;
+    static double t = 0;
 
-    // t += 0.1;
+    t += 0.1;
 
-    // return t;
-
-    struct timeval tp;
-    static int secbase;
-
-    gettimeofday(&tp, NULL);
-
-    if (!secbase)
-    {
-        secbase = tp.tv_sec;
-        return tp.tv_usec / 1000000.0;
-    }
-
-    return (tp.tv_sec - secbase) + tp.tv_usec / 1000000.0;
+    return t;
 }
 
 char *Sys_ConsoleInput(void) { return NULL; }
@@ -451,7 +438,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    parms.memsize = (3 * 1024 * 1024) + (400 * 1024);
+    parms.memsize = 3005000;
     parms.membase = malloc(parms.memsize);
     //COM_AddGameDirectory("sd:/quake");
 

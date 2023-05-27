@@ -45,7 +45,7 @@ byte *surfcache;
 unsigned short d_8to16table[256];
 unsigned d_8to24table[256];
 
-static uint16_t libdragon_palette[256];
+ uint16_t libdragon_palette[256];
 
 void VID_SetPalette(unsigned char *palette)
 {
@@ -132,17 +132,7 @@ void VID_Update(vrect_t *rects)
         sdlrects[i].h = rect->height;
         ++i;
     }
-	rdpq_set_mode_copy(false);
-	rdpq_mode_tlut(TLUT_RGBA16);
-	rdpq_tex_load_tlut(libdragon_palette, 0, 256);
 
-    surface_t *disp = display_get();
-    rdpq_attach(disp, NULL);
-
-	surface_t temp = surface_make_linear(sdlblit->pixels, FMT_CI8, 320, 240);
-	rdpq_tex_blit(&temp, 0, 0, NULL);
-
-	rdpq_detach_show();
 }
 
 /*

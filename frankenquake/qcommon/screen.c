@@ -22,6 +22,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "r_local.h"
 
+#ifdef N64
+#include <libdragon.h>
+extern uint16_t libdragon_palette[256];
+#endif
+
 // only the refresh window will be updated unless these variables are flagged 
 int			scr_copytop;
 int			scr_copyeverything;
@@ -867,6 +872,19 @@ void SCR_UpdateScreen (void)
 		SCR_CalcRefdef ();
 	}
 
+
+#ifdef N64
+
+	rdpq_set_mode_copy(false);
+	rdpq_mode_tlut(TLUT_RGBA16);
+	rdpq_tex_load_tlut(libdragon_palette, 0, 256);
+
+    surface_t *disp = display_get();
+    rdpq_attach(disp, NULL);
+
+	surface_t temp = surface_make_linear(vid.buffer, FMT_CI8, 320, 240);
+	rdpq_tex_blit(&temp, 0, 0, NULL);
+#endif
 //
 // do 3D refresh drawing, and then update the screen
 //
@@ -976,6 +994,11 @@ void SCR_UpdateScreen (void)
 	
 		VID_Update (&vrect);
 	}
+
+#ifdef N64
+
+	rdpq_detach_show();
+#endif
 }
 
 

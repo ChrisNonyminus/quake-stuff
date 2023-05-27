@@ -29,6 +29,7 @@ D_FillRect
 */
 void D_FillRect (vrect_t *rect, int color)
 {
+#ifndef N64
 	int				rx, ry, rwidth, rheight;
 	unsigned char	*dest;
 	unsigned		*ldest;
@@ -84,5 +85,6 @@ void D_FillRect (vrect_t *rect, int color)
 			dest += vid.rowbytes;
 		}
 	}
+#endif
 }
 

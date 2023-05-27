@@ -256,6 +256,7 @@ D_DrawSpans8
 */
 void D_DrawSpans8 (espan_t *pspan)
 {
+#ifndef N64
 	int				count, spancount;
 	unsigned char	*pbase, *pdest;
 	fixed16_t		s, t, snext, tnext, sstep, tstep;
@@ -430,6 +431,7 @@ void D_DrawSpans8 (espan_t *pspan)
 		} while (count > 0);
 
 	} while ((pspan = pspan->pnext) != NULL);
+#endif
 }
 
 #endif
@@ -444,6 +446,7 @@ D_DrawZSpans
 */
 void D_DrawZSpans (espan_t *pspan)
 {
+#ifndef N64
 	int				count, doublecount, izistep;
 	int				izi;
 	short			*pdest;
@@ -493,6 +496,7 @@ void D_DrawZSpans (espan_t *pspan)
 			*pdest = (short)(izi >> 16);
 
 	} while ((pspan = pspan->pnext) != NULL);
+#endif
 }
 
 #endif

@@ -57,7 +57,7 @@ byte		*host_basepal;
 byte		*host_colormap;
 
 cvar_t	host_framerate = {"host_framerate","0"};	// set for slow motion
-cvar_t	host_speeds = {"host_speeds","0"};			// set for running times
+cvar_t	host_speeds = {"host_speeds","1"};			// set for running times
 cvar_t	cl_maxfps = {"cl_maxfps","9999", true};
 cvar_t	sys_ticrate = {"sys_ticrate","0.05"};
 cvar_t	serverprofile = {"serverprofile","0"};

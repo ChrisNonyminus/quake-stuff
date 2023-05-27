@@ -36,7 +36,7 @@ int c_yes, c_no;
 
 qboolean SV_CheckBottom (edict_t *ent)
 {
-	vec3_t	mins, maxs, start, stop;
+	vec3_t	mins = {0}, maxs, start = {0}, stop;
 	trace_t	trace;
 	int		x, y;
 	float	mid, bottom;

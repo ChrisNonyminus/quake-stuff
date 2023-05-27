@@ -179,6 +179,8 @@ void D_DrawSurfaces (void)
 	vec3_t			world_transformed_modelorg;
 	vec3_t			local_modelorg;
 
+	PROFILE_START();
+
 	currententity = &cl_entities[0];
 	TransformVector (modelorg, transformed_modelorg);
 	VectorCopy (transformed_modelorg, world_transformed_modelorg);
@@ -327,5 +329,6 @@ void D_DrawSurfaces (void)
 			}
 		}
 	}
+	PROFILE_END();
 }
 

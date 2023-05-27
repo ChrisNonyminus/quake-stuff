@@ -587,6 +587,7 @@ R_GenerateSpans
 */
 void R_GenerateSpans (void)
 {
+	PROFILE_START();
 	edge_t			*edge;
 	surf_t			*surf;
 
@@ -614,6 +615,7 @@ void R_GenerateSpans (void)
 	}
 
 	R_CleanupSpan ();
+	PROFILE_END();
 }
 
 #endif	// !id386
@@ -662,20 +664,21 @@ Each surface has a linked list of its visible spans
 */
 void R_ScanEdges (void)
 {
+	PROFILE_START();
 	int		iv, bottom;
 	byte	basespans[MAXSPANS*sizeof(espan_t)+CACHE_SIZE];
 	espan_t	*basespan_p;
 	surf_t	*s;
 
-	basespan_p = (espan_t *)
+	PROFILE_EXPR(basespan_p = (espan_t *)
 			((long)(basespans + CACHE_SIZE - 1) & ~(CACHE_SIZE - 1));
 	max_span_p = &basespan_p[MAXSPANS - r_refdef.vrect.width];
 
-	span_p = basespan_p;
+	span_p = basespan_p;, "R_ScanEdges setup")
 
 // clear active edges to just the background edges around the whole screen
 // FIXME: most of this only needs to be set up once
-	edge_head.u = r_refdef.vrect.x << 20;
+	PROFILE_EXPR(edge_head.u = r_refdef.vrect.x << 20;
 	edge_head_u_shift20 = edge_head.u >> 20;
 	edge_head.u_step = 0;
 	edge_head.prev = NULL;
@@ -698,12 +701,12 @@ void R_ScanEdges (void)
 
 // FIXME: do we need this now that we clamp x in r_draw.c?
 	edge_sentinel.u = -805306368;		// make sure nothing sorts past this
-	edge_sentinel.prev = &edge_aftertail;
+	edge_sentinel.prev = &edge_aftertail;, "active edge clearing")
 
 //	
 // process all scan lines
 //
-	bottom = r_refdef.vrectbottom - 1;
+	PROFILE_EXPR(bottom = r_refdef.vrectbottom - 1;
 
 	for (iv=r_refdef.vrect.y ; iv<bottom ; iv++)
 	{
@@ -749,7 +752,7 @@ void R_ScanEdges (void)
 
 		if (edge_head.next != &edge_tail)
 			R_StepActiveU (edge_head.next);
-	}
+	}, "scanline processing")
 
 // do the last scan (no need to step or sort or remove on the last scan)
 
@@ -757,18 +760,20 @@ void R_ScanEdges (void)
 	fv = (float)iv;
 
 // mark that the head (background start) span is pre-included
-	surfaces[1].spanstate = 1;
+	
+
+	PROFILE_EXPR(surfaces[1].spanstate = 1;
 
 	if (newedges[iv])
 		R_InsertNewEdges (newedges[iv], edge_head.next);
-
-	(*pdrawfunc) ();
+		(*pdrawfunc) ();, "background marking")
 
 // draw whatever's left in the span list
-	if (r_drawculledpolys)
+	PROFILE_EXPR(if (r_drawculledpolys)
 		R_DrawCulledPolys ();
 	else
-		D_DrawSurfaces ();
+		D_DrawSurfaces ();, "drawing remaining spans")
+	PROFILE_END();
 }
 
 

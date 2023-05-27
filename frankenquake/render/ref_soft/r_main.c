@@ -117,7 +117,7 @@ void R_MarkLeaves (void);
 
 cvar_t	r_draworder = {"r_draworder","0"};
 cvar_t	r_speeds = {"r_speeds","0"};
-cvar_t	r_timegraph = {"r_timegraph","0"};
+cvar_t	r_timegraph = {"r_timegraph","1"};
 cvar_t	r_graphheight = {"r_graphheight","10"};
 cvar_t	r_clearcolor = {"r_clearcolor","2"};
 cvar_t	r_waterwarp = {"r_waterwarp","1"};
@@ -875,6 +875,7 @@ R_EdgeDrawing
 */
 void R_EdgeDrawing (void)
 {
+	PROFILE_START();
 	edge_t	ledges[NUMSTACKEDGES +
 				((CACHE_SIZE - 1) / sizeof(edge_t)) + 1];
 	surf_t	lsurfs[NUMSTACKSURFACES +
@@ -908,7 +909,7 @@ void R_EdgeDrawing (void)
 		rw_time1 = Sys_FloatTime ();
 	}
 
-	R_RenderWorld ();
+	PROFILE_EXPR(R_RenderWorld ();, "R_RenderWorld")
 
 	if (r_drawculledpolys)
 		R_ScanEdges ();
@@ -923,7 +924,7 @@ void R_EdgeDrawing (void)
 		db_time1 = rw_time2;
 	}
 
-	R_DrawBEntitiesOnList ();
+	PROFILE_EXPR(R_DrawBEntitiesOnList ();, "R_DrawEntitiesOnList")
 
 	if (r_dspeeds.value)
 	{
@@ -938,8 +939,9 @@ void R_EdgeDrawing (void)
 		VID_LockBuffer ();
 	}
 	
-	if (!(r_drawpolys | r_drawculledpolys))
-		R_ScanEdges ();
+	PROFILE_EXPR(if (!(r_drawpolys | r_drawculledpolys))
+		R_ScanEdges ();, "R_ScanEdges")
+	PROFILE_END();
 }
 
 
@@ -960,10 +962,12 @@ void R_RenderView_ (void)
 
 	r_warpbuffer = warpbuffer;
 
+	PROFILE_START();
+
 	if (r_timegraph.value || r_speeds.value || r_dspeeds.value)
 		r_time1 = Sys_FloatTime ();
 
-	R_SetupFrame ();
+	PROFILE_EXPR(R_SetupFrame ();, "R_SetupFrame")
 
 #ifdef PASSAGES
 SetVisibilityByPassages ();
@@ -987,7 +991,7 @@ SetVisibilityByPassages ();
 		VID_LockBuffer ();
 	}
 	
-	R_EdgeDrawing ();
+	PROFILE_EXPR(R_EdgeDrawing ();, "R_EdgeDrawing")
 
 	if (!r_dspeeds.value)
 	{
@@ -1002,7 +1006,7 @@ SetVisibilityByPassages ();
 		de_time1 = se_time2;
 	}
 
-	R_DrawEntitiesOnList ();
+	PROFILE_EXPR(R_DrawEntitiesOnList ();, "R_DrawEntitiesOnList")
 
 	if (r_dspeeds.value)
 	{
@@ -1010,7 +1014,7 @@ SetVisibilityByPassages ();
 		dv_time1 = de_time2;
 	}
 
-	R_DrawViewModel ();
+	PROFILE_EXPR(R_DrawViewModel ();, "R_DrawViewModel")
 
 	if (r_dspeeds.value)
 	{
@@ -1018,7 +1022,7 @@ SetVisibilityByPassages ();
 		dp_time1 = Sys_FloatTime ();
 	}
 
-	R_DrawParticles ();
+	PROFILE_EXPR(R_DrawParticles ();, "R_DrawParticles")
 
 	if (r_dspeeds.value)
 		dp_time2 = Sys_FloatTime ();
@@ -1053,6 +1057,8 @@ SetVisibilityByPassages ();
 // Deallocating from previous fix:
 	free(warpbuffer);
 // <<< FIX
+
+	PROFILE_END();
 }
 
 void R_RenderView (void)

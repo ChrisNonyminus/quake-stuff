@@ -183,7 +183,7 @@ void Sys_Printf(char *fmt, ...)
 }
 
 void Sys_Quit(void) { exit(0); }
-static double ft = 0;
+static volatile double ft = 0;
 double Sys_FloatTime(void)
 {
     return ft;
@@ -471,6 +471,7 @@ int main(int argc, char **argv)
         else
             oldtime += time;
         Host_Frame(time);
+        Sys_Printf("%.2fms\n", time * 1000);
     }
 
     return 0;

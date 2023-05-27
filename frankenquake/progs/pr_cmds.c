@@ -1189,7 +1189,7 @@ void() droptofloor
 void PF_droptofloor (void)
 {
 	edict_t		*ent;
-	vec3_t		end;
+	vec3_t		end = {0, 0, 0};
 	trace_t		trace;
 	
 	ent = PROG_TO_EDICT(pr_global_struct->self);
@@ -1333,7 +1333,7 @@ cvar_t	sv_aim = {"sv_aim", "0.93"};
 void PF_aim (void)
 {
 	edict_t	*ent, *check, *bestent;
-	vec3_t	start, dir, end, bestdir;
+	vec3_t	start = {0}, dir, end, bestdir;
 	int		i, j;
 	trace_t	tr;
 	float	dist, bestdist;

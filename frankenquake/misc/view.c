@@ -1003,6 +1003,7 @@ extern vrect_t scr_vrect;
 
 void V_RenderView(void)
 {
+    PROFILE_START();
     if (con_forcedup)
         return;
 
@@ -1068,6 +1069,7 @@ void V_RenderView(void)
                        scr_vrect.y + scr_vrect.height / 2 + cl_crossy.value,
                        '+');
 #endif
+    PROFILE_END();
 }
 
 //============================================================================

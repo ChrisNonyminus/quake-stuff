@@ -35,7 +35,7 @@ typedef struct
 prstack_t	pr_stack[MAX_STACK_DEPTH];
 int			pr_depth;
 
-#define	LOCALSTACK_SIZE		2048
+//#define	LOCALSTACK_SIZE		2048
 int			localstack[LOCALSTACK_SIZE];
 int			localstack_used;
 

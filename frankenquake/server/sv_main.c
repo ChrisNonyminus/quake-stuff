@@ -728,11 +728,7 @@ SV_SendClientDatagram
 */
 qboolean SV_SendClientDatagram (client_t *client)
 {
-// >>> FIX: For Nintendo DS using devkitARM
-// Allocating in heap. Stack in this device is pretty small:
-	//byte		buf[MAX_DATAGRAM];
-	byte*		buf = Sys_Malloc(MAX_DATAGRAM, "SV_SendClientDatagram");
-// <<< FIX
+	byte		buf[MAX_DATAGRAM];
 	sizebuf_t	msg;
 	
 	msg.data = buf;
@@ -755,18 +751,9 @@ qboolean SV_SendClientDatagram (client_t *client)
 	if (NET_SendUnreliableMessage (client->netconnection, &msg) == -1)
 	{
 		SV_DropClient (true);// if the message couldn't send, kick off
-// >>> FIX: For Nintendo DS using devkitARM
-// Deallocating from previous fix:
-	free(buf);
-// <<< FIX
 		return false;
 	}
 
-// >>> FIX: For Nintendo DS using devkitARM
-// Deallocating from previous fix:
-	free(buf);
-// <<< FIX
-	
 	return true;
 }
 

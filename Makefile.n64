@@ -14,7 +14,7 @@ $(BUILD_DIR)/quake.dfs: $(wildcard frankenquake/sys/n64/filesystem/*)
 CFILES  := $(foreach dir,$(SOURCES),$(wildcard $(dir)/*.c))
 OBJS		:=	$(patsubst %.c,$(BUILD_DIR)/%.o,$(CFILES)) $(patsubst %.c,%.o,$(C_SDL_FILES)) 
 
-CFLAGS += $(foreach dir,$(SOURCES),-I$(dir)) -std=c9x -Wno-error=format-overflow -Wno-error=dangling-pointer -Wno-error=strict-aliasing
+CFLAGS += $(foreach dir,$(SOURCES),-I$(dir)) -std=c9x -Wno-error=format-overflow -Wno-error=dangling-pointer -Wno-error=strict-aliasing -Wno-error=aggressive-loop-optimizations
 
 $(BUILD_DIR)/%.o: %.c 
 	@mkdir -p $(dir $@)

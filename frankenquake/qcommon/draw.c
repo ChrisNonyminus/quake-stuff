@@ -880,7 +880,10 @@ Call before beginning any disc IO.
 */
 void Draw_BeginDisc (void)
 {
-
+// >>> FIX: For Nintendo DS using devkitARM
+// Bug - draw_disc may be used before it's filled with data (before Host_Init() ends). Checking first:
+	if(draw_disc != 0)
+// <<< FIX
 	D_BeginDirectRect (vid.width - 24, 0, draw_disc->data, 24, 24);
 }
 

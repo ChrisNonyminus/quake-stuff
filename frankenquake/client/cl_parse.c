@@ -136,7 +136,11 @@ void CL_KeepaliveMessage(void)
     static float lastmsg;
     int ret;
     sizebuf_t old;
-    byte olddata[8192];
+// >>> FIX: For Nintendo DS using devkitARM
+// Deferring allocation. Stack in this device is pretty small:
+	//byte		olddata[8192];
+	byte*		olddata;
+// <<< FIX
 
     if (sv.active)
         return; // no need if server is local
@@ -145,6 +149,10 @@ void CL_KeepaliveMessage(void)
 
     // read messages from server, should just be nops
     old = net_message;
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating for previous fix:
+	olddata = Sys_Malloc(8192 * sizeof(byte), "CL_KeepaliveMessage");
+// <<< FIX
     memcpy(olddata, net_message.data, net_message.cursize);
 
     do
@@ -172,7 +180,11 @@ void CL_KeepaliveMessage(void)
     // check time
     time = Sys_FloatTime();
     if (time - lastmsg < 5)
-        return;
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+		{free(olddata);
+		return;}		// no need if server is local
+// <<< FIX
     lastmsg = time;
 
     // write out a nop
@@ -181,6 +193,10 @@ void CL_KeepaliveMessage(void)
     MSG_WriteByte(&cls.message, clc_nop);
     NET_SendMessage(cls.netcon, &cls.message);
     SZ_Clear(&cls.message);
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(olddata);
+// <<< FIX
 }
 
 /*
@@ -193,8 +209,14 @@ void CL_ParseServerInfo(void)
     char *str;
     int i;
     int nummodels, numsounds;
-    char model_precache[MAX_MODELS][MAX_QPATH];
-    char sound_precache[MAX_SOUNDS][MAX_QPATH];
+// >>> FIX: For Nintendo DS using devkitARM
+// Deferring allocation. Stack in this device is pretty small:
+	//char	model_precache[MAX_MODELS][MAX_QPATH];
+	//char	sound_precache[MAX_SOUNDS][MAX_QPATH];
+	char**	sound_precache;
+	char**	model_precache;
+// <<< FIX
+	
 
     Con_DPrintf("Serverinfo packet received.\n");
     //
@@ -237,6 +259,15 @@ void CL_ParseServerInfo(void)
     // needlessly purge it
     //
 
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating for previous fix:
+	model_precache = Sys_Malloc(MAX_MODELS * sizeof(char*), "CL_ParseServerInfo");
+	for(i = 0; i < MAX_MODELS; i++)
+	{
+		model_precache[i] = Sys_Malloc(MAX_QPATH, "CL_ParseServerInfo");
+	};
+// <<< FIX
+
     // precache models
     memset(cl.model_precache, 0, sizeof(cl.model_precache));
     for (nummodels = 1;; nummodels++)
@@ -247,11 +278,29 @@ void CL_ParseServerInfo(void)
         if (nummodels == MAX_MODELS)
         {
             Con_Printf("Server sent too many model precaches\n");
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+		for(i = MAX_MODELS - 1; i >= 0; i--)
+		{
+			free(model_precache[i]);
+		};
+		free(model_precache);
+// <<< FIX
+
             return;
         }
         strcpy(model_precache[nummodels], str);
         Mod_TouchModel(str);
     }
+
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating for previous fix:
+	sound_precache = Sys_Malloc(MAX_SOUNDS * sizeof(char*), "CL_ParseServerInfo");
+	for(i = 0; i < MAX_SOUNDS; i++)
+	{
+		sound_precache[i] = Sys_Malloc(MAX_QPATH, "CL_ParseServerInfo");
+	};
+// <<< FIX
 
     // precache sounds
     memset(cl.sound_precache, 0, sizeof(cl.sound_precache));
@@ -263,6 +312,20 @@ void CL_ParseServerInfo(void)
         if (numsounds == MAX_SOUNDS)
         {
             Con_Printf("Server sent too many sound precaches\n");
+
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+		for(i = MAX_SOUNDS - 1; i >= 0; i--)
+		{
+			free(sound_precache[i]);
+		};
+		free(sound_precache);
+		for(i = MAX_MODELS - 1; i >= 0; i--)
+		{
+			free(model_precache[i]);
+		};
+		free(model_precache);
+// <<< FIX
             return;
         }
         strcpy(sound_precache[numsounds], str);
@@ -279,6 +342,20 @@ void CL_ParseServerInfo(void)
         if (cl.model_precache[i] == NULL)
         {
             Con_Printf("Model %s not found\n", model_precache[i]);
+
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+			for(i = MAX_SOUNDS - 1; i >= 0; i--)
+			{
+				free(sound_precache[i]);
+			};
+			free(sound_precache);
+			for(i = MAX_MODELS - 1; i >= 0; i--)
+			{
+				free(model_precache[i]);
+			};
+			free(model_precache);
+// <<< FIX
             return;
         }
         CL_KeepaliveMessage();
@@ -300,6 +377,19 @@ void CL_ParseServerInfo(void)
     Hunk_Check(); // make sure nothing is hurt
 
     noclip_anglehack = false; // noclip is turned off at start
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	for(i = MAX_SOUNDS - 1; i >= 0; i--)
+	{
+		free(sound_precache[i]);
+	};
+	free(sound_precache);
+	for(i = MAX_MODELS - 1; i >= 0; i--)
+	{
+		free(model_precache[i]);
+	};
+	free(model_precache);
+// <<< FIX
 }
 
 /*

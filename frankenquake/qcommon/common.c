@@ -1530,6 +1530,10 @@ Allways appends a 0 byte.
 cache_user_t *loadcache;
 byte    *loadbuf;
 int             loadsize;
+// >>> FIX: For Nintendo DS using devkitARM
+// New variable - tells us, when loading files partially, how much of the temporary "stack" buffer was actually filled:
+int loadstackbuflen;
+// <<< FIX
 byte *COM_LoadFile (char *path, int usehunk)
 {
 	int             h;
@@ -1578,6 +1582,79 @@ byte *COM_LoadFile (char *path, int usehunk)
 	return buf;
 }
 
+
+// >>> FIX: For Nintendo DS using devkitARM
+// New function, for file partial loading
+byte *COM_LoadFilePartial (char *path, int offset, int length, int usehunk, qboolean show)
+{
+	int             h;
+	byte    *buf;
+	char    base[32];
+	int             len;
+
+	buf = NULL;     // quiet compiler warning
+
+// look for it in the filesystem or pack files
+	len = COM_OpenFile (path, &h);
+	if (h == -1)
+		return NULL;
+	
+	if(offset >= len)
+	{
+		Sys_Error("COM_LoadFilePartial: offset past the end of %s", path);
+	};
+	if(offset + length > len)
+	{
+		Sys_Error("COM_LoadFilePartial: reading past the end of %s", path);
+	};
+
+// extract the filename base name for hunk tag
+	COM_FileBase (path, base);
+	
+	if (usehunk == 1)
+		buf = Hunk_AllocName (length+1, base);
+	else if (usehunk == 2)
+		buf = Hunk_TempAlloc (length+1);
+	else if (usehunk == 0)
+		buf = Z_Malloc (length+1);
+	else if (usehunk == 3)
+		buf = Cache_Alloc (loadcache, length+1, base);
+	else if (usehunk == 4)
+	{
+		if (length+1 > loadsize)
+			buf = Hunk_TempAlloc (length+1);
+		else
+			buf = loadbuf;
+	}
+	else
+		Sys_Error ("COM_LoadFilePartial: bad usehunk");
+
+	if (!buf)
+		Sys_Error ("COM_LoadFilePartial: not enough space for %s", path);
+		
+	((byte *)buf)[length] = 0;
+
+	Draw_BeginDisc ();
+	Sys_FileSeekCur (h, offset);
+	if(buf == loadbuf)
+	{
+		loadstackbuflen = loadsize;
+		if((offset + loadsize) >= len)
+		{
+			loadstackbuflen = loadstackbuflen - ((offset + loadsize) - len);
+		};
+		Sys_FileRead (h, buf, loadstackbuflen);                     
+	} else
+	{
+		Sys_FileRead (h, buf, length);                     
+	};
+	COM_CloseFile (h);
+	Draw_EndDisc ();
+
+	return buf;
+}
+// <<< FIX
+
 byte *COM_LoadHunkFile (char *path)
 {
 	return COM_LoadFile (path, 1);
@@ -1606,6 +1683,47 @@ byte *COM_LoadStackFile (char *path, void *buffer, int bufsize)
 	return buf;
 }
 void Hunk_Print(qboolean all);
+
+
+// >>> FIX: For Nintendo DS using devkitARM
+// New function, for file partial loading
+void COM_LoadStackFilePartial(filepartdata_t* info, qboolean show)
+{
+	qboolean reload;
+
+	loadbuf = info->stackbuf;
+	loadsize = info->stackbuflen;
+	if(info->was_stackbuf)
+	{
+		if((info->offset >= info->prev_offset)&&((info->offset + info->length) <= (info->prev_offset + info->prev_length)))
+		{
+			info->buf = loadbuf + (info->offset - info->prev_offset);
+			reload = false;
+		} else
+		{
+			reload = true;
+		};
+	} else
+	{
+		reload = true;
+	};
+	if(reload)
+	{
+		info->buf = COM_LoadFilePartial (info->name, info->offset, info->length, 4, show);
+		if(loadsize >= info->length)
+		{
+			info->was_stackbuf = true;
+			info->prev_offset = info->offset;
+			info->prev_length = loadstackbuflen;
+		} else
+		{
+			info->was_stackbuf = false;
+		};
+	};
+}
+// <<< FIX
+
+
 /*
 =================
 COM_LoadPackFile

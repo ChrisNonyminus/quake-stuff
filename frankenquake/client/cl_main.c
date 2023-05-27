@@ -174,7 +174,12 @@ An svc_signonnum has been received, perform a client side setup
 */
 void CL_SignonReply (void)
 {
-	char 	str[8192];
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating in heap. Stack in this device is pretty small:
+	//char 	str[8192];
+	char* 	str = Sys_Malloc(8192, "CL_SignonReply");
+// <<< FIX
+
 
 Con_DPrintf ("CL_SignonReply: %i\n", cls.signon);
 
@@ -207,6 +212,10 @@ Con_DPrintf ("CL_SignonReply: %i\n", cls.signon);
 		SCR_EndLoadingPlaque ();		// allow normal screen updates
 		break;
 	}
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(str);
+// <<< FIX
 }
 
 /*
@@ -218,7 +227,11 @@ Called to play the next demo in the demo loop
 */
 void CL_NextDemo (void)
 {
-	char	str[1024];
+// >>> FIX: For Nintendo DS using devkitARM
+// Deferring allocation. Stack in this device is pretty small:
+	//char	str[1024];
+	char*	str;
+// <<< FIX
 
 	if (cls.demonum == -1)
 		return;		// don't play demos
@@ -236,9 +249,18 @@ void CL_NextDemo (void)
 		}
 	}
 
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating for previous fix:
+	str = Sys_Malloc(1024, "CL_NextDemo");
+// <<< FIX
+
 	sprintf (str,"playdemo %s\n", cls.demos[cls.demonum]);
 	Cbuf_InsertText (str);
 	cls.demonum++;
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(str);
+// <<< FIX
 }
 
 /*

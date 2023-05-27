@@ -412,7 +412,7 @@ void *Hunk_AllocName (int size, char *name)
 	if (hunk_size - hunk_low_used - hunk_high_used < size) {
 		Hunk_Print(true);
 
-		Sys_Error ("Hunk_Alloc: failed on %i bytes",size);
+		Sys_Error ("Hunk_Alloc: failed on %i bytes (%i left)",size, hunk_size - hunk_low_used - hunk_high_used);
 	}
 	
 	h = (hunk_t *)(hunk_base + hunk_low_used);
@@ -691,7 +691,11 @@ cache_system_t *Cache_TryAlloc (int size, qboolean nobottom)
 	if (!nobottom && cache_head.prev == &cache_head)
 	{
 		if (hunk_size - hunk_high_used - hunk_low_used < size)
-			Sys_Error ("Cache_TryAlloc: %i is greater then free hunk", size);
+// >>> FIX: For Nintendo DS using devkitARM
+// Display a little more info about the error:
+			//Sys_Error ("Cache_TryAlloc: %i is greater then free hunk", size);
+			Sys_Error ("Cache_TryAlloc: %i is greater then free hunk (%i)", size, hunk_size - hunk_high_used - hunk_low_used);
+// <<< FIX
 
 		new = (cache_system_t *) (hunk_base + hunk_low_used);
 		memset (new, 0, sizeof(*new));

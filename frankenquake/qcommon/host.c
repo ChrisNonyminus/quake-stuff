@@ -523,8 +523,13 @@ qboolean Host_FilterTime (float time)
 		host_frametime = host_framerate.value;
 	else
 	{	// don't allow really long or short frames
-		if (host_frametime > 0.1)
-			host_frametime = 0.1;
+// >>> FIX: For Nintendo DS using devkitARM
+// Temporarily let frames exceed the original limits:
+		//if (host_frametime > 0.1)
+		//	host_frametime = 0.1;
+		if (host_frametime > 1.0)
+			host_frametime = 1.0;
+// <<< FIX
 		if (host_frametime < 0.001)
 			host_frametime = 0.001;
 	}
@@ -735,6 +740,10 @@ Host_Init
 */
 void Host_Init (quakeparms_t *parms)
 {
+// >>> FIX: For Nintendo DS using devkitARM
+// Bug - draw_disc may be used before it's filled with data (before Host_Init() ends). Clearing:
+	draw_disc = 0;
+// <<< FIX
 #if 0
 	if (standard_quake)
 		minimum_memory = MINIMUM_MEMORY;

@@ -31,6 +31,10 @@ int Sys_FileOpenRead (char *path, int *hndl);
 int Sys_FileOpenWrite (char *path);
 void Sys_FileClose (int handle);
 void Sys_FileSeek (int handle, int position);
+// >>> FIX: For Nintendo DS using devkitARM
+// New function to move forward in a file:
+void Sys_FileSeekCur (int handle, int offset);
+// <<< FIX
 int Sys_FileRead (int handle, void *dest, int count);
 int Sys_FileWrite (int handle, void *data, int count);
 int	Sys_FileTime (char *path);
@@ -69,3 +73,7 @@ void Sys_LowFPPrecision (void);
 void Sys_HighFPPrecision (void);
 void Sys_SetFPCW (void);
 
+// >>> FIX: For Nintendo DS using devkitARM
+// New function to help local -> heap allocation issues
+void* Sys_Malloc(int size, char* purpose);
+// <<< FIX

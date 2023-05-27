@@ -114,6 +114,11 @@ void Sys_FileSeek(int handle, int position)
     fseek(sys_handles[handle], position, SEEK_SET);
 }
 
+void Sys_FileSeekCur (int handle, int offset)
+{
+	fseek (sys_handles[handle], offset, SEEK_CUR);
+}
+
 int Sys_FileRead(int handle, void *dest, int count)
 {
     return fread(dest, 1, count, sys_handles[handle]);
@@ -160,7 +165,7 @@ void Sys_Error(char *error, ...)
     va_end(argptr);
     printf("\n");
 
-#if 0 // hacky way to cause a breakpoint... by triggering segfaults. Hey, as
+#if 1 // hacky way to cause a breakpoint... by triggering segfaults. Hey, as
       // long as it works... which it might not...
     *(int *)0 = 0;
 #endif
@@ -409,6 +414,22 @@ void Sys_HighFPPrecision(void) {}
 
 void Sys_LowFPPrecision(void) {}
 
+
+// >>> FIX: For Nintendo DS using devkitARM
+// New function to help local -> heap allocation issues
+void* Sys_Malloc(int size, char* purpose)
+{
+	void* m;
+	
+	m = malloc(size);
+	if(m == 0)
+	{
+		Sys_Error ("Sys_Malloc: %s - failed on %i bytes", purpose, size);
+	};
+	return m;
+}
+// <<< FIX
+
 //=============================================================================
 void COM_AddGameDirectory (char *dir);
 int main(int argc, char **argv)
@@ -419,8 +440,8 @@ int main(int argc, char **argv)
 
 
     debug_init(DEBUG_FEATURE_ALL);
-    // console_init();
-	// console_set_render_mode(RENDER_AUTOMATIC);
+    console_init();
+	console_set_render_mode(RENDER_MANUAL);
     int ret = dfs_init(DFS_DEFAULT_LOCATION);
 	assert(ret == DFS_ESUCCESS);
 
@@ -430,7 +451,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    parms.memsize = 3 * 1024 * 1024;
+    parms.memsize = (3 * 1024 * 1024) + (400 * 1024);
     parms.membase = malloc(parms.memsize);
     //COM_AddGameDirectory("sd:/quake");
 

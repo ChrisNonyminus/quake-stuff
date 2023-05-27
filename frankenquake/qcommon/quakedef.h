@@ -104,7 +104,11 @@ void	VID_UnlockBuffer (void);
 //
 // per-level limits
 //
-#define	MAX_EDICTS		600			// FIXME: ouch! ouch! ouch!
+// >>> FIX: For Nintendo DS using devkitARM
+// Temporarily reducing number of edicts
+//#define	MAX_EDICTS		600			// FIXME: ouch! ouch! ouch!
+#define	MAX_EDICTS		300			// FIXME: ouch! ouch! ouch!
+// <<< FIX
 #define	MAX_LIGHTSTYLES	64
 #define	MAX_MODELS		256			// these are sent over the net as bytes
 #define	MAX_SOUNDS		256			// so they cannot be blindly increased
@@ -208,6 +212,12 @@ void	VID_UnlockBuffer (void);
 // This makes anyone on id's net privileged
 // Use for multiplayer testing only - VERY dangerous!!!
 // #define IDGODS
+
+
+// >>> FIX: For Nintendo DS using devkitARM
+// From pr_exec.c, to aid in memory redirection in other places:
+#define	LOCALSTACK_SIZE		2048
+// <<< FIX
 
 #include "common.h"
 #include "bspfile.h"

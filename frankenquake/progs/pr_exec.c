@@ -261,7 +261,11 @@ Aborts the currently executing function
 void PR_RunError (char *error, ...)
 {
 	va_list		argptr;
-	char		string[1024];
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating in heap. Stack in this device is pretty small:
+	//char		string[1024];
+	char*		string = Sys_Malloc(1024, "PR_RunError");
+// <<< FIX
 
 	va_start (argptr,error);
 	vsprintf (string,error,argptr);
@@ -272,6 +276,11 @@ void PR_RunError (char *error, ...)
 	Con_Printf ("%s\n", string);
 	
 	pr_depth = 0;		// dump the stack so host_error can shutdown functions
+
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(string);
+// <<< FIX
 
 	Host_Error ("Program error");
 }

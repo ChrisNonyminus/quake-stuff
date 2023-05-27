@@ -457,7 +457,11 @@ Key_Bind_f
 void Key_Bind_f (void)
 {
 	int			i, c, b;
-	char		cmd[1024];
+// >>> FIX: For Nintendo DS using devkitARM
+// Deferring allocation. Stack in this device is pretty small:
+	//char		cmd[1024];
+	char*		cmd;
+// <<< FIX
 	
 	c = Cmd_Argc();
 
@@ -482,6 +486,11 @@ void Key_Bind_f (void)
 		return;
 	}
 	
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating for previous fix:
+	cmd = Sys_Malloc(1024, "Key_Bind_f");
+// <<< FIX
+
 // copy the rest of the command line
 	cmd[0] = 0;		// start out with a null string
 	for (i=2 ; i< c ; i++)
@@ -492,6 +501,11 @@ void Key_Bind_f (void)
 	}
 
 	Key_SetBinding (b, cmd);
+
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(cmd);
+// <<< FIX
 }
 
 /*
@@ -599,7 +613,11 @@ Should NOT be called during an interrupt!
 void Key_Event (int key, qboolean down)
 {
 	char	*kb;
-	char	cmd[1024];
+// >>> FIX: For Nintendo DS using devkitARM
+// Deferring allocation. Stack in this device is pretty small:
+	//char	cmd[1024];
+	char*	cmd;
+// <<< FIX
 
 	keydown[key] = down;
 
@@ -654,6 +672,11 @@ void Key_Event (int key, qboolean down)
 		return;
 	}
 
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating for previous fix:
+	cmd = Sys_Malloc(1024, "Key_Event");
+// <<< FIX
+
 //
 // key up events only generate commands if the game key binding is
 // a button command (leading + sign).  These will occur even in console mode,
@@ -678,6 +701,10 @@ void Key_Event (int key, qboolean down)
 				Cbuf_AddText (cmd);
 			}
 		}
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+		free(cmd);
+// <<< FIX
 		return;
 	}
 
@@ -687,6 +714,10 @@ void Key_Event (int key, qboolean down)
 	if (cls.demoplayback && down && consolekeys[key] && key_dest == key_game)
 	{
 		M_ToggleMenu_f ();
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+		free(cmd);
+// <<< FIX
 		return;
 	}
 
@@ -711,11 +742,19 @@ void Key_Event (int key, qboolean down)
 				Cbuf_AddText ("\n");
 			}
 		}
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+		free(cmd);
+// <<< FIX
 		return;
 	}
 
 	if (!down)
-		return;		// other systems only care about key down events
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+		{free(cmd);
+		return;}		// other systems only care about key down events
+// <<< FIX
 
 	if (shift_down)
 	{
@@ -738,6 +777,10 @@ void Key_Event (int key, qboolean down)
 	default:
 		Sys_Error ("Bad key_dest");
 	}
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(cmd);
+// <<< FIX
 }
 
 

@@ -144,7 +144,11 @@ void Cbuf_Execute (void)
 {
 	int		i;
 	char	*text;
-	char	line[1024];
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating in heap. Stack in this device is pretty small:
+	//char	line[1024];
+	char*	line = Sys_Malloc(1024, "Cbuf_Execute");
+// <<< FIX
 	int		quotes;
 	
 	while (cmd_text.cursize)
@@ -190,6 +194,10 @@ void Cbuf_Execute (void)
 			break;
 		}
 	}
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(line);
+// <<< FIX
 }
 
 /*
@@ -341,7 +349,11 @@ char *CopyString (char *in)
 void Cmd_Alias_f (void)
 {
 	cmdalias_t	*a;
-	char		cmd[1024];
+// >>> FIX: For Nintendo DS using devkitARM
+// Deferring allocation. Stack in this device is pretty small:
+	//char		cmd[1024];
+	char*		cmd;
+// <<< FIX
 	int			i, c;
 	char		*s;
 
@@ -378,6 +390,11 @@ void Cmd_Alias_f (void)
 	}
 	strcpy (a->name, s);	
 
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating for previous fix:
+	cmd = Sys_Malloc(1024, "Cmd_Alias_f");
+// <<< FIX
+
 // copy the rest of the command line
 	cmd[0] = 0;		// start out with a null string
 	c = Cmd_Argc();
@@ -390,6 +407,10 @@ void Cmd_Alias_f (void)
 	strcat (cmd, "\n");
 	
 	a->value = CopyString (cmd);
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(cmd);
+// <<< FIX
 }
 
 /*

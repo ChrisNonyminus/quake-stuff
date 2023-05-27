@@ -602,7 +602,11 @@ void V_UpdatePalette(void)
     int i, j;
     qboolean new;
     byte *basepal, *newpal;
-    byte pal[768];
+// >>> FIX: For Nintendo DS using devkitARM
+// Deferring allocation. Stack in this device is pretty small:
+	//byte	pal[768];
+	byte*	pal;
+// <<< FIX
     int r, g, b;
     qboolean force;
 
@@ -639,6 +643,11 @@ void V_UpdatePalette(void)
     if (!new && !force)
         return;
 
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating for previous fix:
+	//byte	pal[768];
+	pal = Sys_Malloc(768 * sizeof(byte), "V_UpdatePalette");
+// <<< FIX
     basepal = host_basepal;
     newpal = pal;
 
@@ -666,6 +675,10 @@ void V_UpdatePalette(void)
     }
 
     VID_ShiftPalette(pal);
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(pal);
+// <<< FIX
 }
 #endif // !GLQUAKE
 

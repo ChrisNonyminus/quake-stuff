@@ -952,7 +952,11 @@ r_refdef must be set before the first call
 */
 void R_RenderView_ (void)
 {
-	byte	warpbuffer[WARP_WIDTH * WARP_HEIGHT];
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating in heap. Stack in this device is pretty small:
+	//byte	warpbuffer[WARP_WIDTH * WARP_HEIGHT];
+	byte*	warpbuffer = Sys_Malloc(WARP_WIDTH * WARP_HEIGHT * sizeof(byte), "R_RenderView_");
+// <<< FIX
 
 	r_warpbuffer = warpbuffer;
 
@@ -1044,6 +1048,11 @@ SetVisibilityByPassages ();
 
 // back to high floating-point precision
 	Sys_HighFPPrecision ();
+
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(warpbuffer);
+// <<< FIX
 }
 
 void R_RenderView (void)

@@ -162,6 +162,30 @@ char	*va(char *format, ...);
 
 //============================================================================
 
+
+//============================================================================
+
+// >>> FIX: For Nintendo DS using devkitARM
+// New struct, for file partial loading:
+typedef struct filepartdata_s
+{
+	char name[MAX_QPATH];
+
+	int offset;
+	int length;
+
+	byte* buf;
+
+	byte* stackbuf;
+	int stackbuflen;
+
+	qboolean was_stackbuf;
+	int prev_offset;
+	int prev_length;
+
+} filepartdata_t;
+// <<< FIX
+
 extern int com_filesize;
 struct cache_user_s;
 
@@ -173,6 +197,10 @@ int COM_FOpenFile (char *filename, FILE **file);
 void COM_CloseFile (int h);
 
 byte *COM_LoadStackFile (char *path, void *buffer, int bufsize);
+// >>> FIX: For Nintendo DS using devkitARM
+// New function, for file partial loading:
+void COM_LoadStackFilePartial(filepartdata_t* info, qboolean show);
+// <<< FIX
 byte *COM_LoadTempFile (char *path);
 byte *COM_LoadHunkFile (char *path);
 void COM_LoadCacheFile (char *path, struct cache_user_s *cu);

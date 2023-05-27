@@ -564,7 +564,12 @@ void Host_Loadgame_f (void)
 	FILE	*f;
 	char	mapname[MAX_QPATH];
 	float	time, tfloat;
-	char	str[32768], *start;
+// >>> FIX: For Nintendo DS using devkitARM
+// Deferring allocation. Stack in this device is pretty small:
+	//char	str[32768], *start;
+	char*	str;
+	char* start;
+// <<< FIX
 	int		i, r;
 	edict_t	*ent;
 	int		entnum;
@@ -579,6 +584,10 @@ void Host_Loadgame_f (void)
 		Con_Printf ("load <savename> : load a game\n");
 		return;
 	}
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating for previous fix:
+	str = Sys_Malloc(32768, "Host_Loadgame_f");
+// <<< FIX
 
 	cls.demonum = -1;		// stop demo loop in case this fails
 
@@ -631,7 +640,11 @@ void Host_Loadgame_f (void)
 	if (!sv.active)
 	{
 		Con_Printf ("Couldn't load map\n");
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+		free(str);
 		return;
+// <<< FIX
 	}
 	sv.paused = true;		// pause until all clients connect
 	sv.loadgame = true;
@@ -649,7 +662,11 @@ void Host_Loadgame_f (void)
 	entnum = -1;		// -1 is the globals
 	while (!feof(f))
 	{
-		for (i=0 ; i<sizeof(str)-1 ; i++)
+// >>> FIX: For Nintendo DS using devkitARM
+// Compensating for local variable change:
+		//for (i=0 ; i<sizeof(str)-1 ; i++)
+		for (i=0 ; i<32768-1 ; i++)
+// <<< FIX
 		{
 			r = fgetc (f);
 			if (r == EOF || !r)
@@ -661,7 +678,11 @@ void Host_Loadgame_f (void)
 				break;
 			}
 		}
-		if (i == sizeof(str)-1)
+// >>> FIX: For Nintendo DS using devkitARM
+// Compensating for local variable change:
+		//if (i == sizeof(str)-1)
+		if (i == 32768-1)
+// <<< FIX
 			Sys_Error ("Loadgame buffer overflow");
 		str[i] = 0;
 		start = str;
@@ -704,6 +725,10 @@ void Host_Loadgame_f (void)
 		CL_EstablishConnection ("local");
 		Host_Reconnect_f ();
 	}
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(str);
+// <<< FIX
 }
 
 #ifdef QUAKE2

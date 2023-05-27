@@ -705,8 +705,13 @@ void R_RenderPoly (msurface_t *fa, int clipflags)
 	clipplane_t	*pclip;
 	medge_t		*pedges;
 	mplane_t	*pplane;
-	mvertex_t	verts[2][100];	//FIXME: do real number
-	polyvert_t	pverts[100];	//FIXME: do real number, safely
+// >>> FIX: For Nintendo DS using devkitARM
+// Deferring allocation. Stack in this device is pretty small:
+//	mvertex_t	verts[2][100];	//FIXME: do real number
+//	polyvert_t	pverts[100];	//FIXME: do real number, safely
+	mvertex_t**	verts;	//FIXME: do real number
+	polyvert_t*	pverts;	//FIXME: do real number, safely
+// <<< FIX
 	int			vertpage, newverts, newpage, lastvert;
 	qboolean	visible;
 
@@ -726,6 +731,14 @@ void R_RenderPoly (msurface_t *fa, int clipflags)
 			pclip = &view_clipplanes[i];
 		}
 	}
+
+// >>> FIX: For Nintendo DS using devkitARM
+// Allocating for previous fix:
+	verts = Sys_Malloc(sizeof(mvertex_t*) * 2, "R_RenderPoly");
+	verts[0] = Sys_Malloc(sizeof(mvertex_t) * 100, "R_RenderPoly");
+	verts[1] = Sys_Malloc(sizeof(mvertex_t) * 100, "R_RenderPoly");
+	pverts = Sys_Malloc(sizeof(polyvert_t) * 100, "R_RenderPoly");
+// <<< FIX
 
 // reconstruct the polygon
 // FIXME: these should be precalculated and loaded off disk
@@ -795,7 +808,14 @@ void R_RenderPoly (msurface_t *fa, int clipflags)
 		}
 
 		if (!visible || (newverts < 3))
-			return;
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+			{free(pverts);
+			free(verts[1]);
+			free(verts[0]);
+			free(verts);
+			return;}
+// <<< FIX
 
 		lnumverts = newverts;
 		vertpage ^= 1;
@@ -871,6 +891,14 @@ void R_RenderPoly (msurface_t *fa, int clipflags)
 
 // draw the polygon
 	D_DrawPoly ();
+
+// >>> FIX: For Nintendo DS using devkitARM
+// Deallocating from previous fix:
+	free(pverts);
+	free(verts[1]);
+	free(verts[0]);
+	free(verts);
+// <<< FIX
 }
 
 

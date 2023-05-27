@@ -24,6 +24,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "r_local.h"
 #include "d_local.h"
 
+#ifdef N64
+#include <libdragon.h>
+#endif
+
 // TODO: put in span spilling to shrink list size
 // !!! if this is changed, it must be changed in d_polysa.s too !!!
 #define DPS_MAXSPANS			MAXHEIGHT+1	
@@ -124,6 +128,7 @@ D_PolysetDraw
 */
 void D_PolysetDraw (void)
 {
+#ifndef N64
 	spanpackage_t	spans[DPS_MAXSPANS + 1 +
 			((CACHE_SIZE - 1) / sizeof(spanpackage_t)) + 1];
 						// one extra because of cache line pretouching
@@ -139,6 +144,33 @@ void D_PolysetDraw (void)
 	{
 		D_DrawNonSubdiv ();
 	}
+#else
+
+	mtriangle_t		*ptri;
+	finalvert_t		*pfv, *index0, *index1, *index2;
+	int				i;
+	int				lnumtriangles;
+
+	pfv = r_affinetridesc.pfinalverts;
+	ptri = r_affinetridesc.ptriangles;
+	lnumtriangles = r_affinetridesc.numtriangles;
+
+		rdpq_set_mode_standard();
+    rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+	for (i=0 ; i<lnumtriangles ; i++)
+	{
+		index0 = pfv + ptri[i].vertindex[0];
+		index1 = pfv + ptri[i].vertindex[1];
+		index2 = pfv + ptri[i].vertindex[2];
+
+    rdpq_set_prim_color(RGBA32(((float)index0->v[0] / 320) * 255, 
+	((float)index1->v[0] / 320) * 255, ((float)index2->v[0] / 320) * 255, 255));
+		rdpq_triangle(&TRIFMT_FILL,
+                  (float[]){index0->v[0], index0->v[1]},
+                  (float[]){index1->v[0], index1->v[1]},
+                  (float[]){index2->v[0], index2->v[1]});
+	}
+#endif
 }
 
 

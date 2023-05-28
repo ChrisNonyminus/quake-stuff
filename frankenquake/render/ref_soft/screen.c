@@ -875,12 +875,15 @@ void SCR_UpdateScreen (void)
 
 #ifdef N64
 
+	static surface_t zbuffer;
+	if (!zbuffer.buffer) zbuffer = surface_alloc(FMT_RGBA16, display_get_width(), display_get_height());
+
 	rdpq_set_mode_copy(false);
 	rdpq_mode_tlut(TLUT_RGBA16);
 	rdpq_tex_load_tlut(libdragon_palette, 0, 256);
 
     surface_t *disp = display_get();
-    rdpq_attach(disp, NULL);
+    rdpq_attach_clear(disp, &zbuffer);
 
 	surface_t temp = surface_make_linear(vid.buffer, FMT_CI8, 320, 240);
 	rdpq_tex_blit(&temp, 0, 0, NULL);

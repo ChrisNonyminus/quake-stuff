@@ -156,6 +156,7 @@ void D_PolysetDraw (void)
 	lnumtriangles = r_affinetridesc.numtriangles;
 
 		rdpq_set_mode_standard();
+		rdpq_mode_zbuf(true, true);
     rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
 	for (i=0 ; i<lnumtriangles ; i++)
 	{
@@ -165,10 +166,10 @@ void D_PolysetDraw (void)
 
     rdpq_set_prim_color(RGBA32(((float)index0->v[0] / 320) * 255, 
 	((float)index1->v[0] / 320) * 255, ((float)index2->v[0] / 320) * 255, 255));
-		rdpq_triangle(&TRIFMT_FILL,
-                  (float[]){index0->v[0], index0->v[1]},
-                  (float[]){index1->v[0], index1->v[1]},
-                  (float[]){index2->v[0], index2->v[1]});
+		rdpq_triangle(&TRIFMT_ZBUF,
+                  (float[]){index0->v[0], index0->v[1], 1.0f - ((float)(index0->v[5]>>16) / 32767)},
+                  (float[]){index1->v[0], index1->v[1], 1.0f - ((float)(index1->v[5]>>16) / 32767)},
+                  (float[]){index2->v[0], index2->v[1], 1.0f - ((float)(index2->v[5]>>16) / 32767)});
 	}
 #endif
 }
@@ -181,6 +182,7 @@ D_PolysetDrawFinalVerts
 */
 void D_PolysetDrawFinalVerts (finalvert_t *fv, int numverts)
 {
+#ifndef N64
 	int		i, z;
 	short	*zbuf;
 
@@ -204,6 +206,7 @@ void D_PolysetDrawFinalVerts (finalvert_t *fv, int numverts)
 			}
 		}
 	}
+#endif
 }
 
 

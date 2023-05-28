@@ -56,13 +56,14 @@ int i = 0;
     // surface_t tex = surface_alloc(FMT_CI8, r_polydesc.pcurrentface->)
     // rdpq_tex_load(TILE0,) // TODO
     rdpq_set_mode_standard();
+		rdpq_mode_zbuf(true, true);
     rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
     rdpq_set_prim_color(RGBA32((r_polydesc.pverts[0].u / 320) * 255, (r_polydesc.pverts[1].u / 320) * 255, (r_polydesc.pverts[2].u / 320) * 255, 255));
     for (i = 1; i + 1 < r_polydesc.numverts; i++) {
-		rdpq_triangle(&TRIFMT_FILL,
-                  (float[]){r_polydesc.pverts[0].u, r_polydesc.pverts[0].v},
-                  (float[]){r_polydesc.pverts[i].u, r_polydesc.pverts[i].v},
-                  (float[]){r_polydesc.pverts[i+1].u, r_polydesc.pverts[i+1].v});
+		rdpq_triangle(&TRIFMT_ZBUF,
+                  (float[]){r_polydesc.pverts[0].u, r_polydesc.pverts[0].v, 1.0f - r_polydesc.pverts[0].zi},
+                  (float[]){r_polydesc.pverts[i].u, r_polydesc.pverts[i].v, 1.0f - r_polydesc.pverts[i].zi},
+                  (float[]){r_polydesc.pverts[i+1].u, r_polydesc.pverts[i+1].v, 1.0f - r_polydesc.pverts[i+1].zi});
 	}
 
 #endif

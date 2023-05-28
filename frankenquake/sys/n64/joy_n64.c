@@ -5,6 +5,8 @@
 ControlSchemes control_scheme = CS_TANK;
 int joy_x = 0, joy_y = 0;
 
+#define DEADZONE 10.f
+
 static void Tank_ProcessJoyButton(SDL_Event *event);
 static void Tank_ProcessJoyAxisMotion(SDL_Event *event);
 static void TankModern_ProcessJoyButton(SDL_Event *event);
@@ -17,6 +19,34 @@ static void StickLookModern_ProcessJoyAxisMotion(SDL_Event *event);
 
 static void Dual_ProcessJoyButton(SDL_Event *event);
 static void Dual_ProcessJoyAxisMotion(SDL_Event *event);
+
+void InitControlScheme(ControlSchemes new_scheme)
+{
+    // Cmd_ExecuteString("-klook", src_command);
+    // Cmd_ExecuteString("-mlook", src_command);
+    switch (new_scheme)
+    {
+    case CS_TANK:
+        // Cmd_ExecuteString("+mlook", src_command);
+        break;
+    case CS_TANK_MODERN:
+        // Cmd_ExecuteString("+mlook", src_command);
+        break;
+    case CS_STICK_LOOK:
+        // Cmd_ExecuteString("+klook", src_command);
+        break;
+    case CS_STICK_LOOK_MODERN:
+        // Cmd_ExecuteString("+klook", src_command);
+        break;
+    case CS_DUAL:
+        // Cmd_ExecuteString("+klook", src_command);
+        break;
+    default:
+        break;
+    }
+
+    control_scheme = new_scheme;
+}
 
 void ProcessJoyButton(SDL_Event *event)
 {
@@ -37,6 +67,14 @@ void ProcessJoyButton(SDL_Event *event)
     case CS_DUAL:
         Dual_ProcessJoyButton(event);
         break;
+    default:
+        break;
+    }
+
+    // force L to change control scheme
+    if (event->jbutton.button == 4)
+    {
+        InitControlScheme((control_scheme + 1) % CS_MAX);
     }
 }
 
@@ -59,6 +97,8 @@ void ProcessJoyAxisMotion(SDL_Event *event)
     case CS_DUAL:
         Dual_ProcessJoyAxisMotion(event);
         break;
+    default:
+        break;
     }
 }
 
@@ -68,12 +108,11 @@ static void Tank_ProcessJoyButton(SDL_Event *event)
     {
         case 0: // A
             if (event->jbutton.state == SDL_PRESSED)
-                Cmd_ExecuteString("+jump", src_command);
-            else
-                Cmd_ExecuteString("-jump", src_command);
-            Key_Event(SDLK_RETURN, event->key.state);
+                Cmd_ExecuteString("impulse 10", src_command);
             break;
         case 1: // B
+            if (event->jbutton.state == SDL_PRESSED)
+                Cmd_ExecuteString("impulse 12", src_command);
             break;
         case 2: // Z
             if (event->jbutton.state == SDL_PRESSED)
@@ -88,9 +127,9 @@ static void Tank_ProcessJoyButton(SDL_Event *event)
             break;
         case 5: // R
             if (event->jbutton.state == SDL_PRESSED)
-                Cmd_ExecuteString("+speed", src_command);
+                Cmd_ExecuteString("+jump", src_command);
             else
-                Cmd_ExecuteString("-speed", src_command);
+                Cmd_ExecuteString("-jump", src_command);
             break;
         case 6: // C_up
             if (event->jbutton.state == SDL_PRESSED)
@@ -124,16 +163,16 @@ static void Tank_ProcessJoyAxisMotion(SDL_Event *event)
     {
     case 0: // x axis
         // mouse_x += event->jaxis.value;
-        if (event->jaxis.value < -10.f || event->jaxis.value > 10.f)
+        if (event->jaxis.value < -DEADZONE || event->jaxis.value > DEADZONE)
             joy_x = event->jaxis.value / 500;
         else
             joy_x = 0;
         break;
     case 1: // y axis
         // here we should set the current angle he should look to
-        if (event->jaxis.value < -10.f)
+        if (event->jaxis.value < -DEADZONE)
             Cmd_ExecuteString("+forward", src_command);
-        else if (event->jaxis.value > 10.f)
+        else if (event->jaxis.value > DEADZONE)
             Cmd_ExecuteString("+back", src_command);
         else {
             Cmd_ExecuteString("-forward", src_command);

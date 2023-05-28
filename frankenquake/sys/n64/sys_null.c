@@ -202,7 +202,6 @@ void Sys_Sleep(void) { SDL_Delay(1); }
 
 void Sys_SendKeyEvents(void)
 {
-
     SDL_Event event;
     int sym, state;
     int modstate;
@@ -418,6 +417,7 @@ void Sys_SendKeyEvents(void)
     }
 
     mouse_x += joy_x;
+    mouse_y += joy_y;
 }
 
 void Sys_HighFPPrecision(void) {}
@@ -465,7 +465,6 @@ int main(int argc, char **argv)
 		SDL_JoystickOpen(i);
     new_timer(TIMER_TICKS(1000), TF_CONTINUOUS, UpdateFloatTime);
 
-
     parms.memsize = (4 * 1024 * 1024);
     parms.membase = malloc(parms.memsize);
     //COM_AddGameDirectory("sd:/quake");
@@ -479,6 +478,9 @@ int main(int argc, char **argv)
     Sys_Printf("Host_Init\n");
     Host_Init(&parms);
     oldtime = Sys_FloatTime() - 0.1;
+    
+    InitControlScheme(CS_TANK);
+
     while (1)
     {
         newtime = Sys_FloatTime();

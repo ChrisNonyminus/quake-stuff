@@ -32,6 +32,22 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 double mouse_x, mouse_y;
 
+float gFPS;
+
+void calculate_framerate(void) {
+    static unsigned int curFrameTimeIndex = 0;
+    static unsigned int frameTimes[30];
+    unsigned int newTime = timer_ticks();
+    unsigned int  oldTime = frameTimes[curFrameTimeIndex];
+    frameTimes[curFrameTimeIndex] = newTime;
+
+    curFrameTimeIndex++;
+    if (curFrameTimeIndex >= 30) {
+        curFrameTimeIndex = 0;
+    }
+    gFPS = (30 * 1000000.0f) / TIMER_MICROS(newTime - oldTime);
+}
+
 /*
 ===============================================================================
 

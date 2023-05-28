@@ -397,14 +397,9 @@ void Sys_SendKeyEvents(void)
             ProcessJoyAxisMotion(&event);
             break;
 
-        // this is for dpad, not sure how to handle off the key without impacting the above
-        // case SDL_JOYHATMOTION:
-        //     fprintf(stderr, "dpad motion: %d\n", event.jhat.hat);
-        //     if (event.jhat.value & SDL_HAT_CENTERED)
-        //         break;
-        //     if (event.jhat.value & SDL_HAT_UP)
-
-        //         break;
+        case SDL_JOYHATMOTION:
+            ProcessJoyHatMotion(&event);
+            break;
 
         case SDL_QUIT:
             CL_Disconnect();

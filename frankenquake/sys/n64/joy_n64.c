@@ -9,16 +9,21 @@ int joy_x = 0, joy_y = 0;
 
 static void Tank_ProcessJoyButton(SDL_Event *event);
 static void Tank_ProcessJoyAxisMotion(SDL_Event *event);
+static void Tank_ProcessJoyHatMotion(SDL_Event *event);
 static void TankModern_ProcessJoyButton(SDL_Event *event);
 static void TankModern_ProcessJoyAxisMotion(SDL_Event *event);
+static void TankModern_ProcessJoyHatMotion(SDL_Event *event);
 
 static void StickLook_ProcessJoyButton(SDL_Event *event);
 static void StickLook_ProcessJoyAxisMotion(SDL_Event *event);
+static void StickLook_ProcessJoyHatMotion(SDL_Event *event);
 static void StickLookModern_ProcessJoyButton(SDL_Event *event);
 static void StickLookModern_ProcessJoyAxisMotion(SDL_Event *event);
+static void StickLookModern_ProcessJoyHatMotion(SDL_Event *event);
 
 static void Dual_ProcessJoyButton(SDL_Event *event);
 static void Dual_ProcessJoyAxisMotion(SDL_Event *event);
+static void Dual_ProcessJoyHatMotion(SDL_Event *event);
 
 void InitControlScheme(ControlSchemes new_scheme)
 {
@@ -94,6 +99,30 @@ void ProcessJoyAxisMotion(SDL_Event *event)
         break;
     case CS_DUAL:
         Dual_ProcessJoyAxisMotion(event);
+        break;
+    default:
+        break;
+    }
+}
+
+void ProcessJoyHatMotion(SDL_Event *event)
+{
+    switch (control_scheme)
+    {
+    case CS_TANK:
+        Tank_ProcessJoyHatMotion(event);
+        break;
+    case CS_TANK_MODERN:
+        TankModern_ProcessJoyHatMotion(event);
+        break;
+    case CS_STICK_LOOK:
+        StickLook_ProcessJoyHatMotion(event);
+        break;
+    case CS_STICK_LOOK_MODERN:
+        StickLookModern_ProcessJoyHatMotion(event);
+        break;
+    case CS_DUAL:
+        Dual_ProcessJoyHatMotion(event);
         break;
     default:
         break;
@@ -179,6 +208,28 @@ static void Tank_ProcessJoyAxisMotion(SDL_Event *event)
         break;
     }
 }
+static void Tank_ProcessJoyHatMotion(SDL_Event *event)
+{
+    if (event->jhat.value & SDL_HAT_UP)
+        Cmd_ExecuteString("+lookup", src_command);
+    else
+        Cmd_ExecuteString("-lookup", src_command);
+
+    if (event->jhat.value & SDL_HAT_DOWN)
+        Cmd_ExecuteString("+lookdown", src_command);
+    else
+        Cmd_ExecuteString("-lookdown", src_command);
+
+    if (event->jhat.value & SDL_HAT_LEFT)
+        Cmd_ExecuteString("+moveleft", src_command);
+    else
+        Cmd_ExecuteString("-moveleft", src_command);
+
+    if (event->jhat.value & SDL_HAT_RIGHT)
+        Cmd_ExecuteString("+moveright", src_command);
+    else
+        Cmd_ExecuteString("-moveright", src_command);
+}
 
 static void TankModern_ProcessJoyButton(SDL_Event *event)
 {
@@ -189,6 +240,11 @@ static void TankModern_ProcessJoyAxisMotion(SDL_Event *event)
 {
     // no changes for now
     Tank_ProcessJoyAxisMotion(event);
+}
+static void TankModern_ProcessJoyHatMotion(SDL_Event *event)
+{
+    // no changes for now
+    Tank_ProcessJoyHatMotion(event);
 }
 
 static void StickLook_ProcessJoyButton(SDL_Event *event)
@@ -264,6 +320,28 @@ static void StickLook_ProcessJoyAxisMotion(SDL_Event *event)
         break;
     }
 }
+static void StickLook_ProcessJoyHatMotion(SDL_Event *event)
+{
+    if (event->jhat.value & SDL_HAT_UP)
+        Cmd_ExecuteString("+forward", src_command);
+    else
+        Cmd_ExecuteString("-forward", src_command);
+
+    if (event->jhat.value & SDL_HAT_DOWN)
+        Cmd_ExecuteString("+back", src_command);
+    else
+        Cmd_ExecuteString("-back", src_command);
+
+    if (event->jhat.value & SDL_HAT_LEFT)
+        Cmd_ExecuteString("+moveleft", src_command);
+    else
+        Cmd_ExecuteString("-moveleft", src_command);
+
+    if (event->jhat.value & SDL_HAT_RIGHT)
+        Cmd_ExecuteString("+moveright", src_command);
+    else
+        Cmd_ExecuteString("-moveright", src_command);
+}
 
 static void StickLookModern_ProcessJoyButton(SDL_Event *event)
 {
@@ -274,6 +352,11 @@ static void StickLookModern_ProcessJoyAxisMotion(SDL_Event *event)
 {
     // no changes for now
     StickLook_ProcessJoyAxisMotion(event);
+}
+static void StickLookModern_ProcessJoyHatMotion(SDL_Event *event)
+{
+    // no changes for now
+    StickLook_ProcessJoyHatMotion(event);
 }
 
 static void Dual_ProcessJoyButton(SDL_Event *event)
@@ -395,4 +478,8 @@ static void Dual_ProcessJoyAxisMotion(SDL_Event *event)
             break;
         }
     }
+}
+static void Dual_ProcessJoyHatMotion(SDL_Event *event)
+{
+    // nothing
 }

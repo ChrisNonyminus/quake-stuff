@@ -18,3 +18,4 @@ extern int joy_x, joy_y;
 void InitControlScheme(ControlSchemes new_scheme);
 void ProcessJoyButton(SDL_Event *event);
 void ProcessJoyAxisMotion(SDL_Event *event);
+void ProcessJoyHatMotion(SDL_Event *event);

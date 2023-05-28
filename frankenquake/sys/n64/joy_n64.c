@@ -182,11 +182,13 @@ static void Tank_ProcessJoyAxisMotion(SDL_Event *event)
 
 static void TankModern_ProcessJoyButton(SDL_Event *event)
 {
-
+    // no changes for now
+    Tank_ProcessJoyButton(event);
 }
 static void TankModern_ProcessJoyAxisMotion(SDL_Event *event)
 {
-
+    // no changes for now
+    Tank_ProcessJoyAxisMotion(event);
 }
 
 static void StickLook_ProcessJoyButton(SDL_Event *event)
@@ -265,11 +267,13 @@ static void StickLook_ProcessJoyAxisMotion(SDL_Event *event)
 
 static void StickLookModern_ProcessJoyButton(SDL_Event *event)
 {
-
+    // no changes for now
+    StickLook_ProcessJoyButton(event);
 }
 static void StickLookModern_ProcessJoyAxisMotion(SDL_Event *event)
 {
-
+    // no changes for now
+    StickLook_ProcessJoyAxisMotion(event);
 }
 
 static void Dual_ProcessJoyButton(SDL_Event *event)

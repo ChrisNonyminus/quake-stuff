@@ -55,7 +55,11 @@ void D_Init (void)
 	Cvar_RegisterVariable (&d_mipcap);
 	Cvar_RegisterVariable (&d_mipscale);
 
+#ifdef N64
 	r_drawpolys = true;
+#else
+	r_drawpolys = false;
+#endif
 	r_worldpolysbacktofront = false;
 	r_recursiveaffinetriangles = true;
 	r_pixbytes = 1;

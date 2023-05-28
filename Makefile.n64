@@ -18,6 +18,7 @@ OBJS		:=	$(patsubst %.c,$(BUILD_DIR)/%.o,$(CFILES)) $(patsubst %.c,%.o,$(C_SDL_F
 
 CFLAGS += $(foreach dir,$(SOURCES),-I$(dir)) -std=c9x -Wno-error=format-overflow -Wno-error=dangling-pointer -Wno-error=strict-aliasing -Wno-error=aggressive-loop-optimizations
 CFLAGS += -Wno-error=unused-variable -Wno-unused-variable
+CFLAGS += $(EXTRA_CFLAGS)
 $(BUILD_DIR)/%.o: %.c 
 	@mkdir -p $(dir $@)
 	@echo "    [CC] $<"

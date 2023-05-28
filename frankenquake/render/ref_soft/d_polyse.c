@@ -206,6 +206,27 @@ void D_PolysetDrawFinalVerts (finalvert_t *fv, int numverts)
 			}
 		}
 	}
+#else // N64
+
+	int				i;
+	finalvert_t		 *index0, *index1, *index2;
+
+		rdpq_set_mode_standard();
+		rdpq_mode_zbuf(true, true);
+    rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
+	for (i=1 ; i + 1 <numverts ; i++)
+	{
+		index0 = &fv[0];
+		index1 = &fv[i];
+		index2 = &fv[i+1];
+
+    rdpq_set_prim_color(RGBA32(((float)index0->v[0] / 320) * 255, 
+	((float)index1->v[0] / 320) * 255, ((float)index2->v[0] / 320) * 255, 255));
+		rdpq_triangle(&TRIFMT_ZBUF,
+                  (float[]){index0->v[0], index0->v[1], 1.0f - ((float)(index0->v[5]>>16) / 32767)},
+                  (float[]){index1->v[0], index1->v[1], 1.0f - ((float)(index1->v[5]>>16) / 32767)},
+                  (float[]){index2->v[0], index2->v[1], 1.0f - ((float)(index2->v[5]>>16) / 32767)});
+	}
 #endif
 }
 

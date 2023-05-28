@@ -1,5 +1,6 @@
 V=1
 D=1
+N64_DFS_OFFSET=2M
 SOURCE_DIR=frankenquake
 BUILD_DIR=frankenquake/sys/n64/build
 include $(N64_INST)/include/n64.mk

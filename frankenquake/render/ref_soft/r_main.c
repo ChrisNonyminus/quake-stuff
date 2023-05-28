@@ -363,6 +363,11 @@ void R_ViewChanged (vrect_t *pvrect, int lineadj, float aspect)
 	r_viewchanged = true;
 
 	R_SetVrect (pvrect, &r_refdef.vrect, lineadj);
+#ifdef N64
+	r_refdef.vrect.width = 320; r_refdef.vrect.height = 200;
+	r_refdef.horizontalFieldOfView = 90;
+	r_refdef.xOrigin = r_refdef.yOrigin = 0.5f; // TODO: not setting these causes a divide by zero
+#endif
 
 	r_refdef.horizontalFieldOfView = 2.0 * tan (r_refdef.fov_x/360*M_PI);
 	r_refdef.fvrectx = (float)r_refdef.vrect.x;

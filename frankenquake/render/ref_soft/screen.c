@@ -202,6 +202,7 @@ float CalcFov (float fov_x, float width, float height)
         float   a;
         float   x;
 
+
         if (fov_x < 1 || fov_x > 179)
                 Sys_Error ("Bad fov: %f", fov_x);
 
@@ -248,6 +249,10 @@ static void SCR_CalcRefdef (void)
 		Cvar_Set ("fov","170");
 
 	r_refdef.fov_x = scr_fov.value;
+#ifdef N64
+	r_refdef.vrect.width = 320; // not setting these causes a divide by zero on n64
+	r_refdef.vrect.height = 200; // ditto
+#endif
 	r_refdef.fov_y = CalcFov (r_refdef.fov_x, r_refdef.vrect.width, r_refdef.vrect.height);
 
 // intermission is always full screen	
@@ -269,7 +274,7 @@ static void SCR_CalcRefdef (void)
 	vrect.y = 0;
 	vrect.width = vid.width;
 	vrect.height = vid.height;
-
+	
 	R_SetVrect (&vrect, &scr_vrect, sb_lines);
 
 // guard against going from one mode to another that's less than half the

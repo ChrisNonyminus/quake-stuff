@@ -522,9 +522,9 @@ int main(int argc, char **argv)
 
 
 
-    debug_init(DEBUG_FEATURE_ALL);
-    console_init();
-    console_set_render_mode(RENDER_MANUAL); // has to be uncommented for Sys_Printfs to relay to is-viewer
+    // debug_init(DEBUG_FEATURE_ALL);
+    // console_init();
+    // console_set_render_mode(RENDER_MANUAL); // has to be uncommented for Sys_Printfs to relay to is-viewer
     int ret = dfs_init(DFS_DEFAULT_LOCATION);
 	assert(ret == DFS_ESUCCESS);
 

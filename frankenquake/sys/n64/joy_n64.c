@@ -278,9 +278,121 @@ static void StickLookModern_ProcessJoyAxisMotion(SDL_Event *event)
 
 static void Dual_ProcessJoyButton(SDL_Event *event)
 {
-    
+    if (event->jbutton.which == 0)
+    {
+        switch(event->jbutton.button)
+        {
+            case 0: // A
+                if (event->jbutton.state == SDL_PRESSED)
+                    Cmd_ExecuteString("impulse 10", src_command);
+                break;
+            case 1: // B
+                if (event->jbutton.state == SDL_PRESSED)
+                    Cmd_ExecuteString("impulse 12", src_command);
+                break;
+            case 2: // Z
+                if (event->jbutton.state == SDL_PRESSED)
+                    Cmd_ExecuteString("+jump", src_command);
+                else
+                    Cmd_ExecuteString("-jump", src_command);
+                break;
+            case 3: // start
+                Key_Event(K_ESCAPE, event->key.state);
+                break;
+            case 4: // L
+                break;
+            case 5: // R
+                break;
+            case 6: // C_up
+                break;
+            case 7: // C_down
+                break;
+            case 8: // C_left
+                break;
+            case 9: // C_right
+                break;
+        }
+    }
+    else if (event->jbutton.which == 1)
+    {
+        switch(event->jbutton.button)
+        {
+            case 0: // A
+                if (event->jbutton.state == SDL_PRESSED)
+                    Cmd_ExecuteString("impulse 10", src_command);
+                break;
+            case 1: // B
+                if (event->jbutton.state == SDL_PRESSED)
+                    Cmd_ExecuteString("impulse 12", src_command);
+                break;
+            case 2: // Z
+                if (event->jbutton.state == SDL_PRESSED)
+                    Cmd_ExecuteString("+attack", src_command);
+                else
+                    Cmd_ExecuteString("-attack", src_command);
+                break;
+            case 3: // start
+                Key_Event(K_ESCAPE, event->key.state);
+                break;
+            case 4: // L
+                break;
+            case 5: // R
+                break;
+            case 6: // C_up
+                break;
+            case 7: // C_down
+                break;
+            case 8: // C_left
+                break;
+            case 9: // C_right
+                break;
+        }
+    }
 }
 static void Dual_ProcessJoyAxisMotion(SDL_Event *event)
 {
-    
+    if (event->jbutton.which == 0)
+    {
+        switch (event->jaxis.axis)
+        {
+        case 0: // x axis
+            if (event->jaxis.value < -DEADZONE)
+                Cmd_ExecuteString("+moveleft", src_command);
+            else if (event->jaxis.value > DEADZONE)
+                Cmd_ExecuteString("+moveright", src_command);
+            else {
+                Cmd_ExecuteString("-moveleft", src_command);
+                Cmd_ExecuteString("-moveright", src_command);
+            }
+            break;
+        case 1: // y axis
+            if (event->jaxis.value < -DEADZONE)
+                Cmd_ExecuteString("+forward", src_command);
+            else if (event->jaxis.value > DEADZONE)
+                Cmd_ExecuteString("+back", src_command);
+            else {
+                Cmd_ExecuteString("-forward", src_command);
+                Cmd_ExecuteString("-back", src_command);
+            }
+            break;
+        }
+    }
+    else if (event->jbutton.which == 1)
+    {
+        switch (event->jaxis.axis)
+        {
+        case 0: // x axis
+            if (event->jaxis.value < -DEADZONE || event->jaxis.value > DEADZONE)
+                joy_x = event->jaxis.value / 500;
+            else
+                joy_x = 0;
+            break;
+        case 1: // y axis
+            if (event->jaxis.value < -DEADZONE || event->jaxis.value > DEADZONE)
+                joy_y = event->jaxis.value / 500;
+            else
+                joy_y = 0;
+            break;
+        }
+    }
 }

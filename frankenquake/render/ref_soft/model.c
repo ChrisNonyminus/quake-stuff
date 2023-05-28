@@ -562,6 +562,10 @@ void Mod_LoadTextures(lump_t *l, filepartdata_t *fpdata)
                 {
                     tcount = 0;
                 };
+
+                // hack to make sure if doesn't crash
+                if (!loadmodel->textures[tcount])
+                    break;
             } while (
                 (!Q_strncmp(loadmodel->textures[tcount]->name, "sky", 3)) ||
                 (!Q_strncmp(loadmodel->textures[tcount]->name, "*", 1)));

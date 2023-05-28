@@ -3,7 +3,7 @@
         {
             "name": "N64",
             "includePath": [
-                "${default}",
+                "${workspaceFolder}/frankenquake/**",
                 "libs/sdl_n64/SDL2/include",
                 "libdragon/include"
             ],

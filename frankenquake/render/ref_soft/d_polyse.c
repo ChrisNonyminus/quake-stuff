@@ -156,7 +156,7 @@ void D_PolysetDraw (void)
 	lnumtriangles = r_affinetridesc.numtriangles;
 
 		rdpq_set_mode_standard();
-		rdpq_mode_zbuf(true, true);
+		rdpq_mode_zbuf(true, false);
     rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
 	for (i=0 ; i<lnumtriangles ; i++)
 	{
@@ -212,7 +212,7 @@ void D_PolysetDrawFinalVerts (finalvert_t *fv, int numverts)
 	finalvert_t		 *index0, *index1, *index2;
 
 		rdpq_set_mode_standard();
-		rdpq_mode_zbuf(true, true);
+		rdpq_mode_zbuf(true, false);
     rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
 	for (i=1 ; i + 1 <numverts ; i++)
 	{
@@ -669,6 +669,7 @@ D_PolysetDrawSpans8
 */
 void D_PolysetDrawSpans8 (spanpackage_t *pspanpackage)
 {
+	
 	int		lcount;
 	byte	*lpdest;
 	byte	*lptex;

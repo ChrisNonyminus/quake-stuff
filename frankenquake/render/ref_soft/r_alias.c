@@ -542,8 +542,8 @@ void R_AliasPrepareUnclippedPoints (void)
 
 	R_AliasTransformAndProjectFinalVerts (fv, pstverts);
 
-	if (r_affinetridesc.drawtype)
-		D_PolysetDrawFinalVerts (fv, r_anumverts);
+	// if (r_affinetridesc.drawtype)
+	// 	D_PolysetDrawFinalVerts (fv, r_anumverts);
 
 	r_affinetridesc.pfinalverts = pfinalverts;
 	r_affinetridesc.ptriangles = (mtriangle_t *)

@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifdef N64
 #include <libdragon.h>
 #include <malloc.h>
+#include "../../sys/n64/joy_n64.h"
 extern uint16_t libdragon_palette[256];
 #endif
 
@@ -1007,9 +1008,9 @@ void SCR_UpdateScreen (void)
 #ifdef N64
 #if 1
     struct mallinfo mem_info = mallinfo();
-    char memory_used_text[21];
-            snprintf(memory_used_text, 21, "%dKB/%dKB", mem_info.uordblks / 1024,
-                     get_memory_size() / 1024);
+    char memory_used_text[26];
+            snprintf(memory_used_text, 26, "%dKB/%dKB, c:%d", mem_info.uordblks / 1024,
+                     get_memory_size() / 1024, control_scheme);
     graphics_set_color(0xffffffff, 0x000000ff);
     graphics_draw_text(disp, 10, 10, memory_used_text);
 #endif

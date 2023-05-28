@@ -28,6 +28,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 
 double mouse_x, mouse_y;
+int joy_x, joy_y;
 
 /*
 ===============================================================================
@@ -388,7 +389,6 @@ void Sys_SendKeyEvents(void)
 
         case SDL_JOYBUTTONDOWN:
         case SDL_JOYBUTTONUP:
-            fprintf(stderr, "button: %d\n", event.jbutton.button);
             switch(event.jbutton.button)
             {
                 case 0: // A
@@ -419,15 +419,15 @@ void Sys_SendKeyEvents(void)
                     break;
                 case 6: // C_up
                     if (event.jbutton.state == SDL_PRESSED)
-                        Cmd_ExecuteString("+forward", src_command);
+                    Cmd_ExecuteString("+lookup", src_command);
                     else
-                        Cmd_ExecuteString("-forward", src_command);
+                    Cmd_ExecuteString("-lookup", src_command);
                     break;
                 case 7: // C_down
                     if (event.jbutton.state == SDL_PRESSED)
-                        Cmd_ExecuteString("+back", src_command);
+                    Cmd_ExecuteString("+lookdown", src_command);
                     else
-                        Cmd_ExecuteString("-back", src_command);
+                    Cmd_ExecuteString("-lookdown", src_command);
                     break;
                 case 8: // C_left
                     if (event.jbutton.state == SDL_PRESSED)
@@ -445,29 +445,24 @@ void Sys_SendKeyEvents(void)
             break;
 
         case SDL_JOYAXISMOTION:
-            fprintf(stderr, "axis motion: %d\n", event.jaxis.axis);
             switch (event.jaxis.axis)
             {
             case 0: // x axis
                 // mouse_x += event.jaxis.value;
-                if (event.jaxis.value < -10.f)
-                    Cmd_ExecuteString("+left", src_command);
-                else if (event.jaxis.value > 10.f)
-                    Cmd_ExecuteString("+right", src_command);
-                else {
-                    Cmd_ExecuteString("-left", src_command);
-                    Cmd_ExecuteString("-right", src_command);
-                }
+                if (event.jaxis.value < -10.f || event.jaxis.value > 10.f)
+                    joy_x = event.jaxis.value / 500;
+                else
+                    joy_x = 0;
                 break;
             case 1: // y axis
                 // here we should set the current angle he should look to
                 if (event.jaxis.value < -10.f)
-                    Cmd_ExecuteString("+lookdown", src_command);
+                    Cmd_ExecuteString("+forward", src_command);
                 else if (event.jaxis.value > 10.f)
-                    Cmd_ExecuteString("+lookup", src_command);
+                    Cmd_ExecuteString("+back", src_command);
                 else {
-                    Cmd_ExecuteString("-lookdown", src_command);
-                    Cmd_ExecuteString("-lookup", src_command);
+                    Cmd_ExecuteString("-forward", src_command);
+                    Cmd_ExecuteString("-back", src_command);
                 }
                 break;
             }
@@ -491,6 +486,8 @@ void Sys_SendKeyEvents(void)
             break;
         }
     }
+
+    mouse_x += joy_x;
 }
 
 void Sys_HighFPPrecision(void) {}

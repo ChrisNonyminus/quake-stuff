@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "N64",
+            "includePath": [
+                "${default}",
+                "libs/sdl_n64/SDL2/include",
+                "libdragon/include"
+            ],
+            "defines": [
+                "SDL_VIDEO_RENDER_N64",
+                "SDL_VIDEO_DRIVER_N64",
+                "SDL_JOYSTICK_N64",
+                "N64"
+            ],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "gnu99",
+            "cppStandard": "gnu++14",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}

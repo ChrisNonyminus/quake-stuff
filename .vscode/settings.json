@@ -1,0 +1,7 @@
+{
+    "files.associations": {
+        "*.q1": "c",
+        "*.q2": "c",
+        "sdl_yuv_c.h": "c"
+    }
+}

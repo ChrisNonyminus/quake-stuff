@@ -459,10 +459,12 @@ int main(int argc, char **argv)
     double time, oldtime, newtime;
 
 
+#ifndef PROFILE_OFF // be sure to set PROFILE_OFF if you don't have a usb logger on real hardware!
+    debug_init(DEBUG_FEATURE_ALL);
+    console_init();
+    console_set_render_mode(RENDER_MANUAL); // has to be uncommented for Sys_Printfs to relay to is-viewer
+#endif
 
-    // debug_init(DEBUG_FEATURE_ALL);
-    // console_init();
-    // console_set_render_mode(RENDER_MANUAL); // has to be uncommented for Sys_Printfs to relay to is-viewer
     int ret = dfs_init(DFS_DEFAULT_LOCATION);
 	assert(ret == DFS_ESUCCESS);
 

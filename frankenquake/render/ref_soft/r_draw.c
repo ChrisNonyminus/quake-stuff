@@ -705,8 +705,8 @@ void R_RenderPoly (msurface_t *fa, int clipflags)
 	clipplane_t	*pclip;
 	medge_t		*pedges;
 	mplane_t	*pplane;
-mvertex_t	verts[2][100];	//FIXME: do real number
-polyvert_t	pverts[100];	//FIXME: do real number, safely
+	mvertex_t	verts[2][100];	//FIXME: do real number
+	polyvert_t	pverts[100];	//FIXME: do real number, safely
 	int			vertpage, newverts, newpage, lastvert;
 	qboolean	visible;
 

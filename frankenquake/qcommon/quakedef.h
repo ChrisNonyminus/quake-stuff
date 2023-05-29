@@ -45,6 +45,30 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <stdlib.h>
 #include <setjmp.h>
 
+#ifndef PROFILE_OFF
+#define CONCAT_IMPL( x, y ) x##y
+#define MACRO_CONCAT( x, y ) CONCAT_IMPL( x, y )
+#define PROFILE_START() double ft1 = 0, ft2 = 0;
+#define PROFILE_TIME() Sys_FloatTime()
+#define PROFILE_END() ft2 = ft1 = ft2 // ensure profile vars are used 
+                                      // to appease "unused variable" warnings 
+                                      // that can be treated as errors by some compilers
+#define PROFILE_EXPR(expr) \
+    ft1 = PROFILE_TIME();\
+    expr;\
+    ft2 = PROFILE_TIME();\
+    Sys_Printf("PROFILER -- %s|%s:%d: %.2fms\n", __FUNCTION__, __FILE__ , __LINE__, (ft2 - ft1) *1000); \
+
+#else
+#define CONCAT_IMPL( x, y ) x##y
+#define MACRO_CONCAT( x, y ) CONCAT_IMPL( x, y )
+#define PROFILE_START()
+#define PROFILE_TIME() Sys_FloatTime()
+#define PROFILE_END()
+#define PROFILE_EXPR(expr, exprname) expr; \
+
+#endif
+
 #if defined(_WIN32) && !defined(WINDED)
 
 #if defined(_M_IX86)

@@ -209,7 +209,7 @@ typedef struct btofpoly_s {
 	msurface_t	*psurf;
 } btofpoly_t;
 
-#define MAX_BTOFPOLYS	5000	// FIXME: tune this
+#define MAX_BTOFPOLYS	512	// FIXME: tune this
 
 extern int			numbtofpolys;
 extern btofpoly_t	*pbtofpolys;

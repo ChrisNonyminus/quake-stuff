@@ -164,6 +164,14 @@ void D_PolysetDraw (void)
 		index1 = pfv + ptri[i].vertindex[1];
 		index2 = pfv + ptri[i].vertindex[2];
 
+		if (((index0->v[1]-index1->v[1]) *
+			 (index0->v[0]-index2->v[0]) -
+			 (index0->v[0]-index1->v[0]) * 
+			 (index0->v[1]-index2->v[1])) >= 0)
+		{
+			continue;
+		}
+
     rdpq_set_prim_color(RGBA32(((float)index0->v[0] / 320) * 255, 
 	((float)index1->v[0] / 320) * 255, ((float)index2->v[0] / 320) * 255, 255));
 		rdpq_triangle(&TRIFMT_ZBUF,
@@ -220,12 +228,15 @@ void D_PolysetDrawFinalVerts (finalvert_t *fv, int numverts)
 		index1 = &fv[i];
 		index2 = &fv[i+1];
 
-    rdpq_set_prim_color(RGBA32(((float)index0->v[0] / 320) * 255, 
-	((float)index1->v[0] / 320) * 255, ((float)index2->v[0] / 320) * 255, 255));
-		rdpq_triangle(&TRIFMT_ZBUF,
+		if ((fv->v[0] < r_refdef.vrectright) &&
+			(fv->v[1] < r_refdef.vrectbottom)) {
+			rdpq_set_prim_color(RGBA32(((float)index0->v[0] / 320) * 255, 
+			((float)index1->v[0] / 320) * 255, ((float)index2->v[0] / 320) * 255, 255));
+					rdpq_triangle(&TRIFMT_ZBUF,
                   (float[]){index0->v[0], index0->v[1], 1.0f - ((float)(index0->v[5]>>16) / 32767)},
                   (float[]){index1->v[0], index1->v[1], 1.0f - ((float)(index1->v[5]>>16) / 32767)},
                   (float[]){index2->v[0], index2->v[1], 1.0f - ((float)(index2->v[5]>>16) / 32767)});
+		}
 	}
 #endif
 }

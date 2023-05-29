@@ -6,7 +6,7 @@ BUILD_DIR=frankenquake/sys/n64/build
 include $(N64_INST)/include/n64.mk
 include libs/sdl_n64/SDL2/Makefile_sdl2.mk
 
-SOURCES := frankenquake/client frankenquake/console frankenquake/misc frankenquake/misc frankenquake/network frankenquake/progs frankenquake/qcommon frankenquake/render/ref_soft frankenquake/server frankenquake/sound frankenquake/sys/n64
+SOURCES := frankenquake/client frankenquake/console frankenquake/misc frankenquake/misc frankenquake/network frankenquake/progs frankenquake/qcommon frankenquake/render/ref_rdpq frankenquake/server frankenquake/sound frankenquake/sys/n64
 
 all: quake.z64
 .PHONY: all

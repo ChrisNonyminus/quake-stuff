@@ -256,7 +256,7 @@ D_DrawSpans8
 */
 void D_DrawSpans8 (espan_t *pspan)
 {
-#ifndef N64
+#if 1
 	int				count, spancount;
 	unsigned char	*pbase, *pdest;
 	fixed16_t		s, t, snext, tnext, sstep, tstep;
@@ -446,7 +446,7 @@ D_DrawZSpans
 */
 void D_DrawZSpans (espan_t *pspan)
 {
-#ifndef N64
+#if 0
 	int				count, doublecount, izistep;
 	int				izi;
 	short			*pdest;

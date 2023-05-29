@@ -49,7 +49,7 @@ D_DrawPoly
 */
 void D_DrawPoly(void)
 {
-#ifndef N64
+#if 1
 // this driver takes spans, not polygons
 #else
 int i = 0;
@@ -103,7 +103,7 @@ D_DrawSolidSurface
 
 void D_DrawSolidSurface(surf_t *surf, int color)
 {
-#ifndef N64
+#if 1
     espan_t *span;
     byte *pdest;
     int u, u2, pix;

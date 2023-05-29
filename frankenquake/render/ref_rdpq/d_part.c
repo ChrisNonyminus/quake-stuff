@@ -54,7 +54,7 @@ D_DrawParticle
 */
 void D_DrawParticle (particle_t *pparticle)
 {
-#ifndef N64
+#if 0
 	vec3_t	local, transformed;
 	float	zi;
 	byte	*pdest;

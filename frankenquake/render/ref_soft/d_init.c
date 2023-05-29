@@ -55,7 +55,7 @@ void D_Init (void)
 	Cvar_RegisterVariable (&d_mipcap);
 	Cvar_RegisterVariable (&d_mipscale);
 
-#if 0
+#ifdef N64
 	r_drawpolys = true;
 #else
 	r_drawpolys = false;

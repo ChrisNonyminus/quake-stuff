@@ -2,6 +2,20 @@
     "files.associations": {
         "*.q1": "c",
         "*.q2": "c",
-        "sdl_yuv_c.h": "c"
+        "sdl_yuv_c.h": "c",
+        "r_local.h": "c",
+        "r_shared.h": "c",
+        "quakedef.h": "c",
+        "libdragon.h": "c",
+        "array": "c",
+        "deque": "c",
+        "forward_list": "c",
+        "list": "c",
+        "string": "c",
+        "unordered_map": "c",
+        "unordered_set": "c",
+        "vector": "c",
+        "string_view": "c",
+        "initializer_list": "c"
     }
 }

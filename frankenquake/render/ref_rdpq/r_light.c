@@ -237,23 +237,24 @@ int RecursiveLightPoint (mnode_t *node, vec3_t start, vec3_t end)
 
 int R_LightPoint (vec3_t p)
 {
-	vec3_t		end;
+	//vec3_t		end;
 	int			r;
 	
 	if (!cl.worldmodel->lightdata)
 		return 255;
 	
-	end[0] = p[0];
-	end[1] = p[1];
-	end[2] = p[2] - 2048;
+	// end[0] = p[0];
+	// end[1] = p[1];
+	// end[2] = p[2] - 2048;
 	
-	r = RecursiveLightPoint (cl.worldmodel->nodes, p, end);
+	//r = RecursiveLightPoint (cl.worldmodel->nodes, p, end);
 	
-	if (r == -1)
-		r = 0;
+	// if (r == -1)
+	// 	r = 0;
 
-	if (r < r_refdef.ambientlight)
-		r = r_refdef.ambientlight;
+	// if (r < r_refdef.ambientlight)
+	// 	r = r_refdef.ambientlight;
+	r = 255;
 
 	return r;
 }

@@ -56,13 +56,13 @@ void D_Init (void)
 	Cvar_RegisterVariable (&d_mipscale);
 
 #ifdef N64
-	r_drawpolys = true;
+	r_drawpolys = false;
 #else
 	r_drawpolys = false;
 #endif
-	r_worldpolysbacktofront = true;
+	r_worldpolysbacktofront = false;
 	r_recursiveaffinetriangles = true;
-	r_pixbytes = 1;
+	r_pixbytes = 2;
 	r_aliasuvscale = 1.0;
 }
 

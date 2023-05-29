@@ -90,7 +90,11 @@ extern void D_PolysetAff8Start (void);
 extern void D_PolysetAff8End (void);
 #endif
 
+#ifndef N64
 extern short *d_pzbuffer;
+#else
+extern surface_t zbuffer;
+#endif
 extern unsigned int d_zrowbytes, d_zwidth;
 
 extern int	*d_pscantable;

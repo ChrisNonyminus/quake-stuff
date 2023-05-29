@@ -22,6 +22,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "r_local.h"
 
+extern uint16_t libdragon_palette[256];
+
 //
 // current entity info
 //
@@ -439,6 +441,64 @@ void R_DrawSubmodelPolygons (model_t *pmodel, int clipflags)
 	}
 }
 
+void R_RenderBrushPoly(msurface_t* fa);
+
+/*
+================
+DrawTextureChains
+================
+*/
+void DrawTextureChains (void)
+{
+	int		i;
+	msurface_t	*s;
+	texture_t	*t;
+
+	// if (/*!gl_texsort.value*/false) {
+	// 	GL_DisableMultitexture();
+
+	// 	if (skychain) {
+	// 		R_DrawSkyChain(skychain);
+	// 		skychain = NULL;
+	// 	}
+
+	// 	return;
+	// } 
+
+	for (i=0 ; i<cl.worldmodel->numtextures ; i++)
+	{
+		t = cl.worldmodel->textures[i];
+		if (!t)
+			continue;
+		s = t->texturechain;
+		
+
+		if (!s)
+			continue;
+		// if (i == skytexturenum)
+		// 	R_DrawSkyChain (s);
+		// else if (i == mirrortexturenum && r_mirroralpha.value != 1.0)
+		// {
+		// 	R_MirrorChain (s);
+		// 	continue;
+		// }
+		// else
+		{
+
+			// if ((s->flags & SURF_DRAWTURB) && r_wateralpha.value != 1.0)
+			// 	continue;	// draw translucent water later
+			surface_t tex = surface_make_linear(((byte*)t + t->offsets[3]), FMT_CI8, t->width >> 3, t->height >>3 );
+			glEnable(GL_RDPQ_TEXTURING_N64);
+			rdpq_tex_load(TILE0, &tex, NULL);
+
+			for ( ; s ; s=s->texturechain)
+				R_RenderBrushPoly (s);
+			glDisable(GL_RDPQ_TEXTURING_N64);
+		}
+
+		t->texturechain = NULL;
+	}
+}
 
 /*
 ================
@@ -460,43 +520,6 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 	if (node->visframe != r_visframecount)
 		return;
 
-// cull the clipping planes if not trivial accept
-// FIXME: the compiler is doing a lousy job of optimizing here; it could be
-//  twice as fast in ASM
-	if (clipflags)
-	{
-		for (i=0 ; i<4 ; i++)
-		{
-			if (! (clipflags & (1<<i)) )
-				continue;	// don't need to clip against it
-
-		// generate accept and reject points
-		// FIXME: do with fast look-ups or integer tests based on the sign bit
-		// of the floating point values
-
-			pindex = pfrustum_indexes[i];
-
-			rejectpt[0] = (float)node->minmaxs[pindex[0]];
-			rejectpt[1] = (float)node->minmaxs[pindex[1]];
-			rejectpt[2] = (float)node->minmaxs[pindex[2]];
-			
-			d = DotProduct (rejectpt, view_clipplanes[i].normal);
-			d -= view_clipplanes[i].dist;
-
-			if (d <= 0)
-				return;
-
-			acceptpt[0] = (float)node->minmaxs[pindex[3+0]];
-			acceptpt[1] = (float)node->minmaxs[pindex[3+1]];
-			acceptpt[2] = (float)node->minmaxs[pindex[3+2]];
-
-			d = DotProduct (acceptpt, view_clipplanes[i].normal);
-			d -= view_clipplanes[i].dist;
-
-			if (d >= 0)
-				clipflags &= ~(1<<i);	// node is entirely on screen
-		}
-	}
 	
 // if a leaf node, draw stuff
 	if (node->contents < 0)
@@ -520,117 +543,81 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 		{
 			R_StoreEfrags (&pleaf->efrags);
 		}
-
-		pleaf->key = r_currentkey;
-		r_currentkey++;		// all bmodels in a leaf share the same key
 	}
 	else
 	{
-	// node is just a decision point, so go down the apropriate sides
+		// node is just a decision point, so go down the apropriate sides
 
-	// find which side of the node we are on
-		plane = node->plane;
+		// find which side of the node we are on
+			plane = node->plane;
 
-		switch (plane->type)
-		{
-		case PLANE_X:
-			dot = modelorg[0] - plane->dist;
-			break;
-		case PLANE_Y:
-			dot = modelorg[1] - plane->dist;
-			break;
-		case PLANE_Z:
-			dot = modelorg[2] - plane->dist;
-			break;
-		default:
-			dot = DotProduct (modelorg, plane->normal) - plane->dist;
-			break;
-		}
-	
-		if (dot >= 0)
-			side = 0;
-		else
-			side = 1;
+			switch (plane->type)
+			{
+			case PLANE_X:
+				dot = modelorg[0] - plane->dist;
+				break;
+			case PLANE_Y:
+				dot = modelorg[1] - plane->dist;
+				break;
+			case PLANE_Z:
+				dot = modelorg[2] - plane->dist;
+				break;
+			default:
+				dot = DotProduct (modelorg, plane->normal) - plane->dist;
+				break;
+			}
+		
+			if (dot >= 0)
+				side = 0;
+			else
+				side = 1;
 
-	// recurse down the children, front side first
-		R_RecursiveWorldNode (node->children[side], clipflags);
+		// recurse down the children, front side first
+			R_RecursiveWorldNode (node->children[side], clipflags);
 
-	// draw stuff
-		c = node->numsurfaces;
+		// draw stuff
+			c = node->numsurfaces;
 
+			
 		if (c)
 		{
 			surf = cl.worldmodel->surfaces + node->firstsurface;
 
-			if (dot < -BACKFACE_EPSILON)
-			{
-				do
-				{
-					if ((surf->flags & SURF_PLANEBACK) &&
-						(surf->visframe == r_framecount))
-					{
-						if (r_drawpolys)
-						{
-							if (r_worldpolysbacktofront)
-							{
-								if (numbtofpolys < MAX_BTOFPOLYS)
-								{
-									pbtofpolys[numbtofpolys].clipflags =
-											clipflags;
-									pbtofpolys[numbtofpolys].psurf = surf;
-									numbtofpolys++;
-								}
-							}
-							else
-							{
-								R_RenderPoly (surf, clipflags);
-							}
-						}
-						else
-						{
-							R_RenderFace (surf, clipflags);
-						}
-					}
-
-					surf++;
-				} while (--c);
-			}
+			if (dot < 0 -BACKFACE_EPSILON)
+				side = SURF_PLANEBACK;
 			else if (dot > BACKFACE_EPSILON)
+				side = 0;
 			{
-				do
+				for ( ; c ; c--, surf++)
 				{
-					if (!(surf->flags & SURF_PLANEBACK) &&
-						(surf->visframe == r_framecount))
-					{
-						if (r_drawpolys)
-						{
-							if (r_worldpolysbacktofront)
-							{
-								if (numbtofpolys < MAX_BTOFPOLYS)
-								{
-									pbtofpolys[numbtofpolys].clipflags =
-											clipflags;
-									pbtofpolys[numbtofpolys].psurf = surf;
-									numbtofpolys++;
-								}
-							}
-							else
-							{
-								R_RenderPoly (surf, clipflags);
-							}
-						}
-						else
-						{
-							R_RenderFace (surf, clipflags);
-						}
-					}
+					if (surf->visframe != r_framecount)
+						continue;
 
-					surf++;
-				} while (--c);
+					// don't backface underwater surfaces, because they warp
+					if ( /*!(surf->flags & SURF_UNDERWATER) && */( (dot < 0) ^ !!(surf->flags & SURF_PLANEBACK)) )
+						continue;		// wrong side
+
+					// if sorting by texture, just store it out
+					if (/*gl_texsort.value*/true)
+					{
+						if (/*!mirror
+						|| surf->texinfo->texture != cl.worldmodel->textures[mirrortexturenum]*/ 1)
+						{
+							surf->texturechain = surf->texinfo->texture->texturechain;
+							surf->texinfo->texture->texturechain = surf;
+						}
+					} /*else if (surf->flags & SURF_DRAWSKY) {
+						surf->texturechain = skychain;
+						skychain = surf;
+					} else if (surf->flags & SURF_DRAWTURB) {
+						surf->texturechain = waterchain;
+						waterchain = surf;
+					} else
+						R_DrawSequentialPoly (surf);*/
+
+				}
 			}
 
-		// all surfaces on the same node share the same sequence number
-			r_currentkey++;
 		}
 
 	// recurse down the back side
@@ -660,15 +647,8 @@ void R_RenderWorld (void)
 
 	R_RecursiveWorldNode (clmodel->nodes, 15);
 
-// if the driver wants the polygons back to front, play the visible ones back
-// in that order
-	if (r_worldpolysbacktofront)
-	{
-		for (i=numbtofpolys-1 ; i>=0 ; i--)
-		{
-			R_RenderPoly (btofpolys[i].psurf, btofpolys[i].clipflags);
-		}
-	}
+
+	DrawTextureChains ();
 }
 
 

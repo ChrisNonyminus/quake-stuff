@@ -237,7 +237,7 @@ void R_Init (void)
 
 	D_Init ();
 }
-
+void GL_BuildLightmaps(void);
 /*
 ===============
 R_NewMap
@@ -254,6 +254,8 @@ void R_NewMap (void)
 		 	
 	r_viewleaf = NULL;
 	R_ClearParticles ();
+
+	//GL_BuildLightmaps ();
 
 	r_cnumsurfs = r_maxsurfs.value;
 

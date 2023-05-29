@@ -74,6 +74,7 @@ typedef struct texture_s
 	struct texture_s *anim_next;		// in the animation sequence
 	struct texture_s *alternate_anims;	// bmodels in frmae 1 use these
 	unsigned	offsets[MIPLEVELS];		// four mip maps stored
+	struct	msurface_s	*texturechain;
 } texture_t;
 
 
@@ -99,6 +100,19 @@ typedef struct
 	int			flags;
 } mtexinfo_t;
 
+
+#define	VERTEXSIZE	7
+
+typedef struct glpoly_s
+{
+	struct	glpoly_s	*next;
+	struct	glpoly_s	*chain;
+	int		numverts;
+	int		flags;			// for SURF_UNDERWATER
+	float	verts[4][VERTEXSIZE];	// variable sized (xyz s1t1 s2t2)
+} glpoly_t;
+
+
 typedef struct msurface_s
 {
 	int			visframe;		// should be drawn when node is crossed
@@ -117,8 +131,10 @@ typedef struct msurface_s
 
 	short		texturemins[2];
 	short		extents[2];
+	glpoly_t	*polys;				// multiple if warped
 
 	mtexinfo_t	*texinfo;
+	struct	msurface_s	*texturechain;
 	
 // lighting info
 	byte		styles[MAXLIGHTMAPS];

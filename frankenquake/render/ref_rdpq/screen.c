@@ -21,6 +21,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "r_local.h"
+#include "d_local.h"
 
 #ifdef N64
 #include <libdragon.h>
@@ -884,18 +885,18 @@ void SCR_UpdateScreen (void)
 
 #ifdef N64
 
-	static surface_t zbuffer;
-	if (!zbuffer.buffer) zbuffer = surface_alloc(FMT_RGBA16, display_get_width(), display_get_height());
-
 	rdpq_set_mode_copy(false);
-	rdpq_mode_tlut(TLUT_RGBA16);
-	rdpq_tex_load_tlut(libdragon_palette, 0, 256);
 
     surface_t *disp = display_get();
     rdpq_attach_clear(disp, &zbuffer);
+	vid.conbuffer = vid.buffer = disp->buffer;
+	rdpq_set_mode_standard();
+    gl_context_begin();
+	rdpq_mode_tlut(TLUT_RGBA16);
+	rdpq_tex_load_tlut(libdragon_palette, 0, 256);
 
-	surface_t temp = surface_make_linear(vid.buffer, FMT_CI8, 320, 240);
-	rdpq_tex_blit(&temp, 0, 0, NULL);
+	// surface_t temp = surface_make_linear(vid.buffer, FMT_CI8, 320, 240);
+	// rdpq_tex_blit(&temp, 0, 0, NULL);
 #endif
 //
 // do 3D refresh drawing, and then update the screen
@@ -1020,6 +1021,8 @@ void SCR_UpdateScreen (void)
     graphics_draw_text(disp, 10, 10, memory_used_text);
     graphics_draw_text(disp, 319 - strlen(fpsText) * 9, 10, fpsText);
 #endif
+	glFlush();
+    gl_context_end();
 	rdpq_detach_show();
 #endif
 }

@@ -53,6 +53,234 @@ static void	(*surfmiptable[4])(void) = {
 
 unsigned		blocklights[18*18];
 
+model_t		*currentmodel;
+#define	BLOCK_WIDTH		128
+#define	BLOCK_HEIGHT	128
+
+/*
+================
+BuildSurfaceDisplayList
+================
+*/
+void BuildSurfaceDisplayList (msurface_t *fa)
+{
+	int			i, lindex, lnumverts, s_axis, t_axis;
+	float		dist, lastdist, lzi, scale, u, v, frac;
+	unsigned	mask;
+	vec3_t		local, transformed;
+	medge_t		*pedges, *r_pedge;
+	mplane_t	*pplane;
+	int			vertpage, newverts, newpage, lastvert;
+	qboolean	visible;
+	float		*vec;
+	float		s, t;
+	glpoly_t	*poly;
+
+
+
+// reconstruct the polygon
+	pedges = currententity->model->edges;
+	lnumverts = fa->numedges;
+	vertpage = 0;
+	UNUSED(vertpage);
+
+	//
+	// draw texture
+	//
+	poly = Hunk_Alloc (sizeof(glpoly_t) + (lnumverts-4) * VERTEXSIZE*sizeof(float));
+	poly->next = fa->polys;
+	poly->flags = fa->flags;
+	fa->polys = poly;
+	poly->numverts = lnumverts;
+
+	for (i=0 ; i<lnumverts ; i++)
+	{
+		lindex = currententity->model->surfedges[fa->firstedge + i];
+
+		if (lindex > 0)
+		{
+			r_pedge = &pedges[lindex];
+			vec = r_pcurrentvertbase[r_pedge->v[0]].position;
+		}
+		else
+		{
+			r_pedge = &pedges[-lindex];
+			vec = r_pcurrentvertbase[r_pedge->v[1]].position;
+		}
+		s = DotProduct (vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
+		s /= fa->texinfo->texture->width;
+
+		t = DotProduct (vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
+		t /= fa->texinfo->texture->height;
+
+		VectorCopy (vec, poly->verts[i]);
+		poly->verts[i][3] = s;
+		poly->verts[i][4] = t;
+
+		// //
+		// // lightmap texture coordinates
+		// //
+		// s = DotProduct (vec, fa->texinfo->vecs[0]) + fa->texinfo->vecs[0][3];
+		// s -= fa->texturemins[0];
+		// s += fa->light_s*16;
+		// s += 8;
+		// s /= BLOCK_WIDTH*16; //fa->texinfo->texture->width;
+
+		// t = DotProduct (vec, fa->texinfo->vecs[1]) + fa->texinfo->vecs[1][3];
+		// t -= fa->texturemins[1];
+		// t += fa->light_t*16;
+		// t += 8;
+		// t /= BLOCK_HEIGHT*16; //fa->texinfo->texture->height;
+
+		// poly->verts[i][5] = s;
+		// poly->verts[i][6] = t;
+	}
+
+	// //
+	// // remove co-linear points - Ed
+	// //
+	// if (!gl_keeptjunctions.value && !(fa->flags & SURF_UNDERWATER) )
+	// {
+	// 	for (i = 0 ; i < lnumverts ; ++i)
+	// 	{
+	// 		vec3_t v1, v2;
+	// 		float *prev, *this, *next;
+	// 		float f;
+
+	// 		prev = poly->verts[(i + lnumverts - 1) % lnumverts];
+	// 		this = poly->verts[i];
+	// 		next = poly->verts[(i + 1) % lnumverts];
+
+	// 		VectorSubtract( this, prev, v1 );
+	// 		VectorNormalize( v1 );
+	// 		VectorSubtract( next, prev, v2 );
+	// 		VectorNormalize( v2 );
+
+	// 		// skip co-linear points
+	// 		#define COLINEAR_EPSILON 0.001
+	// 		if ((fabs( v1[0] - v2[0] ) <= COLINEAR_EPSILON) &&
+	// 			(fabs( v1[1] - v2[1] ) <= COLINEAR_EPSILON) && 
+	// 			(fabs( v1[2] - v2[2] ) <= COLINEAR_EPSILON))
+	// 		{
+	// 			int j;
+	// 			for (j = i + 1; j < lnumverts; ++j)
+	// 			{
+	// 				int k;
+	// 				for (k = 0; k < VERTEXSIZE; ++k)
+	// 					poly->verts[j - 1][k] = poly->verts[j][k];
+	// 			}
+	// 			--lnumverts;
+	// 			++nColinElim;
+	// 			// retry next vertex next time, which is now current vertex
+	// 			--i;
+	// 		}
+	// 	}
+	// }
+	poly->numverts = lnumverts;
+
+}
+
+/*
+================
+DrawGLPoly
+================
+*/
+void DrawGLPoly (glpoly_t *p)
+{
+	int		i;
+	float	*v;
+	
+	glBegin (GL_POLYGON);
+	v = p->verts[0];
+	for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
+	{
+		glTexCoord2f (v[3], v[4]);
+		glVertex3fv (v);
+	}
+	glEnd ();
+}
+
+/*
+================
+R_RenderBrushPoly
+================
+*/
+void R_RenderBrushPoly (msurface_t *fa)
+{
+	texture_t	*t;
+	byte		*base;
+	int			maps;
+	//glRect_t    *theRect;
+	int smax, tmax;
+
+	if (!fa->polys) {
+		BuildSurfaceDisplayList(fa);
+	}
+
+	//c_brush_polys++;
+
+	// if (fa->flags & SURF_DRAWSKY)
+	// {	// warp texture, no lightmaps
+	// 	EmitBothSkyLayers (fa);
+	// 	return;
+	// }
+		
+	// t = R_TextureAnimation (fa->texinfo->texture);
+	// GL_Bind (t->gl_texturenum);
+
+	// if (fa->flags & SURF_DRAWTURB)
+	// {	// warp texture, no lightmaps
+	// 	EmitWaterPolys (fa);
+	// 	return;
+	// }
+
+	// if (fa->flags & SURF_UNDERWATER)
+	// 	DrawGLWaterPoly (fa->polys);
+	// else
+		DrawGLPoly (fa->polys);
+
+// 	// add the poly to the proper lightmap chain
+
+// 	fa->polys->chain = lightmap_polys[fa->lightmaptexturenum];
+// 	lightmap_polys[fa->lightmaptexturenum] = fa->polys;
+
+// 	// check for lightmap modification
+// 	for (maps = 0 ; maps < MAXLIGHTMAPS && fa->styles[maps] != 255 ;
+// 		 maps++)
+// 		if (d_lightstylevalue[fa->styles[maps]] != fa->cached_light[maps])
+// 			goto dynamic;
+
+// 	if (fa->dlightframe == r_framecount	// dynamic this frame
+// 		|| fa->cached_dlight)			// dynamic previously
+// 	{
+// dynamic:
+// 		if (r_dynamic.value)
+// 		{
+// 			lightmap_modified[fa->lightmaptexturenum] = true;
+// 			theRect = &lightmap_rectchange[fa->lightmaptexturenum];
+// 			if (fa->light_t < theRect->t) {
+// 				if (theRect->h)
+// 					theRect->h += theRect->t - fa->light_t;
+// 				theRect->t = fa->light_t;
+// 			}
+// 			if (fa->light_s < theRect->l) {
+// 				if (theRect->w)
+// 					theRect->w += theRect->l - fa->light_s;
+// 				theRect->l = fa->light_s;
+// 			}
+// 			smax = (fa->extents[0]>>4)+1;
+// 			tmax = (fa->extents[1]>>4)+1;
+// 			if ((theRect->w + theRect->l) < (fa->light_s + smax))
+// 				theRect->w = (fa->light_s-theRect->l)+smax;
+// 			if ((theRect->h + theRect->t) < (fa->light_t + tmax))
+// 				theRect->h = (fa->light_t-theRect->t)+tmax;
+// 			base = lightmaps + fa->lightmaptexturenum*lightmap_bytes*BLOCK_WIDTH*BLOCK_HEIGHT;
+// 			base += fa->light_t * BLOCK_WIDTH * lightmap_bytes + fa->light_s * lightmap_bytes;
+// 			R_BuildLightMap (fa, base, BLOCK_WIDTH*lightmap_bytes);
+// 		}
+// 	}
+}
+
 /*
 ===============
 R_AddDynamicLights
@@ -137,6 +365,112 @@ void R_AddDynamicLights (void)
 			}
 		}
 	}
+}
+
+
+/*
+==================
+GL_BuildLightmaps
+
+Builds the lightmap texture
+with all the surfaces from all brush models
+==================
+*/
+void GL_BuildLightmaps (void)
+{
+	int		i, j;
+	model_t	*m;
+	extern qboolean isPermedia;
+
+	// memset (allocated, 0, sizeof(allocated));
+
+	// r_framecount = 1;		// no dlightcache
+
+	// if (!lightmap_textures)
+	// {
+	// 	lightmap_textures = texture_extension_number;
+	// 	texture_extension_number += MAX_LIGHTMAPS;
+	// }
+
+	// gl_lightmap_format = GL_LUMINANCE;
+	// // default differently on the Permedia
+	// if (isPermedia)
+	// 	gl_lightmap_format = GL_RGBA;
+
+	// if (COM_CheckParm ("-lm_1"))
+	// 	gl_lightmap_format = GL_LUMINANCE;
+	// if (COM_CheckParm ("-lm_a"))
+	// 	gl_lightmap_format = GL_ALPHA;
+	// if (COM_CheckParm ("-lm_i"))
+	// 	gl_lightmap_format = GL_INTENSITY;
+	// if (COM_CheckParm ("-lm_2"))
+	// 	gl_lightmap_format = GL_RGBA4;
+	// if (COM_CheckParm ("-lm_4"))
+	// 	gl_lightmap_format = GL_RGBA;
+
+	// switch (gl_lightmap_format)
+	// {
+	// case GL_RGBA:
+	// 	lightmap_bytes = 4;
+	// 	break;
+	// case GL_RGBA4:
+	// 	lightmap_bytes = 2;
+	// 	break;
+	// case GL_LUMINANCE:
+	// case GL_INTENSITY:
+	// case GL_ALPHA:
+	// 	lightmap_bytes = 1;
+	// 	break;
+	// }
+
+	for (j=1 ; j<MAX_MODELS ; j++)
+	{
+		m = cl.model_precache[j];
+		if (!m)
+			break;
+		if (m->name[0] == '*')
+			continue;
+		r_pcurrentvertbase = m->vertexes;
+		currentmodel = m;
+		for (i=0 ; i<m->numsurfaces ; i++)
+		{
+			//GL_CreateSurfaceLightmap (m->surfaces + i);
+			if ( m->surfaces[i].flags & SURF_DRAWTURB )
+				continue;
+#ifndef QUAKE2
+			if ( m->surfaces[i].flags & SURF_DRAWSKY )
+				continue;
+#endif
+			BuildSurfaceDisplayList (m->surfaces + i);
+		}
+	}
+
+ 	// if (!gl_texsort.value)
+ 	// 	GL_SelectTexture(TEXTURE1_SGIS);
+
+	// //
+	// // upload all lightmaps that were filled
+	// //
+	// for (i=0 ; i<MAX_LIGHTMAPS ; i++)
+	// {
+	// 	if (!allocated[i][0])
+	// 		break;		// no more used
+	// 	lightmap_modified[i] = false;
+	// 	lightmap_rectchange[i].l = BLOCK_WIDTH;
+	// 	lightmap_rectchange[i].t = BLOCK_HEIGHT;
+	// 	lightmap_rectchange[i].w = 0;
+	// 	lightmap_rectchange[i].h = 0;
+	// 	GL_Bind(lightmap_textures + i);
+	// 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	// 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	// 	glTexImage2D (GL_TEXTURE_2D, 0, lightmap_bytes
+	// 	, BLOCK_WIDTH, BLOCK_HEIGHT, 0, 
+	// 	gl_lightmap_format, GL_UNSIGNED_BYTE, lightmaps+i*BLOCK_WIDTH*BLOCK_HEIGHT*lightmap_bytes);
+	// }
+
+ 	// if (!gl_texsort.value)
+ 	// 	GL_SelectTexture(TEXTURE0_SGIS);
+
 }
 
 /*

@@ -29,7 +29,7 @@ D_FillRect
 */
 void D_FillRect (vrect_t *rect, int color)
 {
-#ifndef N64
+#if 1
 	int				rx, ry, rwidth, rheight;
 	unsigned char	*dest;
 	unsigned		*ldest;

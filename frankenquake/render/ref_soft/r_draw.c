@@ -385,6 +385,7 @@ R_RenderFace
 */
 void R_RenderFace (msurface_t *fa, int clipflags)
 {
+#if 1
 	int			i, lindex;
 	unsigned	mask;
 	mplane_t	*pplane;
@@ -573,6 +574,7 @@ void R_RenderFace (msurface_t *fa, int clipflags)
 
 //JDC	VectorCopy (r_worldmodelorg, surface_p->modelorg);
 	surface_p++;
+#endif
 }
 
 

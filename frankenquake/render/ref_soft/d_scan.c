@@ -249,6 +249,7 @@ void Turbulent8 (espan_t *pspan)
 
 #if	!id386
 
+
 /*
 =============
 D_DrawSpans8
@@ -256,22 +257,11 @@ D_DrawSpans8
 */
 void D_DrawSpans8 (espan_t *pspan)
 {
-#ifndef N64
 	int				count, spancount;
 	unsigned char	*pbase, *pdest;
 	fixed16_t		s, t, snext, tnext, sstep, tstep;
 	float			sdivz, tdivz, zi, z, du, dv, spancountminus1;
 	float			sdivz8stepu, tdivz8stepu, zi8stepu;
-// >>> FIX: For Nintendo DS using devkitARM
-// New variables to track t changes:
-	int tcheck;
-	int twhole;
-	int prev_twhole;
-	int tspan;
-
-	prev_twhole = 0;
-	tspan = 0;
-// <<< FIX
 
 	sstep = 0;	// keep compiler happy
 	tstep = 0;	// ditto
@@ -378,41 +368,6 @@ void D_DrawSpans8 (espan_t *pspan)
 				}
 			}
 
-// >>> FIX: For Nintendo DS using devkitARM
-// Switching between span drawing routines (part 1):
-			tcheck = ((t + spancount * tstep) >> 16) - (t >> 16);
-			if(tcheck == 0)
-			{
-				tspan = (t >> 16) * cachewidth;
-				do
-				{
-					*pdest++ = *(pbase + (s >> 16) + tspan);
-					s += sstep;
-				} while (--spancount > 0);
-			} else 
-			{
-				if(tcheck < 0)
-				{
-					tcheck = -tcheck;
-				};
-				tcheck = tcheck << 2;
-				if(tcheck < spancount)
-				{
-					do
-					{
-						twhole = (t >> 16);
-						if(prev_twhole != twhole)
-						{
-							prev_twhole = twhole;
-							tspan = twhole * cachewidth;
-						};
-						*pdest++ = *(pbase + (s >> 16) + tspan);
-						s += sstep;
-						t += tstep;
-					} while (--spancount > 0);
-				} else
-				{
-// <<< FIX
 			do
 			{
 				*pdest++ = *(pbase + (s >> 16) + (t >> 16) * cachewidth);
@@ -420,19 +375,15 @@ void D_DrawSpans8 (espan_t *pspan)
 				t += tstep;
 			} while (--spancount > 0);
 
-// >>> FIX: For Nintendo DS using devkitARM
-// Switching between span drawing routines (part 2):
-				};
-			};
-// <<< FIX
 			s = snext;
 			t = tnext;
 
 		} while (count > 0);
 
 	} while ((pspan = pspan->pnext) != NULL);
-#endif
 }
+
+
 
 #endif
 
@@ -446,7 +397,7 @@ D_DrawZSpans
 */
 void D_DrawZSpans (espan_t *pspan)
 {
-#ifndef N64
+#if 1
 	int				count, doublecount, izistep;
 	int				izi;
 	short			*pdest;

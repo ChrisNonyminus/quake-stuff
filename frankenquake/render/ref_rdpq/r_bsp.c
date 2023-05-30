@@ -484,8 +484,6 @@ void DrawTextureChains (void)
 	// 	return;
 	// } 
 
-		rdpq_mode_zbuf(true, true);
-    		rdpq_mode_combiner(RDPQ_COMBINER_TEX);
 	for (i=0 ; i<cl.worldmodel->numtextures ; i++)
 	{
 		t = cl.worldmodel->textures[i];
@@ -506,8 +504,8 @@ void DrawTextureChains (void)
 		// else
 		{
 
-			// if ((s->flags & SURF_DRAWTURB) && r_wateralpha.value != 1.0)
-			// 	continue;	// draw translucent water later
+			if ((s->flags & SURF_DRAWTURB))
+				continue;	// draw translucent water later
 			
 			// surface_t tex =surface_make_linear(t->resampled, FMT_CI8, t->rwidth, t->rheight);
 			// rdpq_tex_load(TILE0, &tex, &(rdpq_texparms_t){ 
@@ -525,7 +523,7 @@ void DrawTextureChains (void)
 		t->texturechain = NULL;
 	}
 }
-
+qboolean R_CullBox (vec3_t mins, vec3_t maxs);
 /*
 ================
 R_RecursiveWorldNode
@@ -545,6 +543,43 @@ void R_RecursiveWorldNode (mnode_t *node, int clipflags)
 
 	if (node->visframe != r_visframecount)
 		return;
+// cull the clipping planes if not trivial accept
+// FIXME: the compiler is doing a lousy job of optimizing here; it could be
+//  twice as fast in ASM
+	if (clipflags)
+	{
+		for (i=0 ; i<4 ; i++)
+		{
+			if (! (clipflags & (1<<i)) )
+				continue;	// don't need to clip against it
+
+		// generate accept and reject points
+		// FIXME: do with fast look-ups or integer tests based on the sign bit
+		// of the floating point values
+
+			pindex = pfrustum_indexes[i];
+
+			rejectpt[0] = (float)node->minmaxs[pindex[0]];
+			rejectpt[1] = (float)node->minmaxs[pindex[1]];
+			rejectpt[2] = (float)node->minmaxs[pindex[2]];
+			
+			d = DotProduct (rejectpt, view_clipplanes[i].normal);
+			d -= view_clipplanes[i].dist;
+
+			if (d <= 0)
+				return;
+
+			acceptpt[0] = (float)node->minmaxs[pindex[3+0]];
+			acceptpt[1] = (float)node->minmaxs[pindex[3+1]];
+			acceptpt[2] = (float)node->minmaxs[pindex[3+2]];
+
+			d = DotProduct (acceptpt, view_clipplanes[i].normal);
+			d -= view_clipplanes[i].dist;
+
+			if (d >= 0)
+				clipflags &= ~(1<<i);	// node is entirely on screen
+		}
+	}
 
 	
 // if a leaf node, draw stuff

@@ -222,7 +222,7 @@ void DrawGLPoly (glpoly_t *p)
 R_RenderBrushPoly
 ================
 */
-void GL_Bind (int texnum);
+void GL_Bind (int texnum, byte* data, int width, int height);
 void R_RenderBrushPoly (msurface_t *fa)
 {
 	texture_t	*t;
@@ -244,7 +244,7 @@ void R_RenderBrushPoly (msurface_t *fa)
 	// }
 		
 	t = R_TextureAnimation (fa->texinfo->texture);
-	GL_Bind (t->gl_texturenum);
+	GL_Bind (t->gl_texturenum, (byte*)t->resampled, t->rwidth, t->rheight);
 	current_polytex = t;
 
 	// if (fa->flags & SURF_DRAWTURB)

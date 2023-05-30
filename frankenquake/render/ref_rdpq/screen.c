@@ -39,6 +39,8 @@ int			scr_copyeverything;
 float		scr_con_current;
 float		scr_conlines;		// lines of console to display
 
+int			glx = 0, gly = 0, glwidth = 320, glheight = 240;
+
 float		oldscreensize, oldfov;
 cvar_t		scr_viewsize = {"viewsize","100", true};
 cvar_t		scr_fov = {"fov","90"};	// 10 - 170
@@ -893,8 +895,6 @@ void SCR_UpdateScreen (void)
 	vid.conbuffer = vid.buffer = (byte*)fb;
 	rdpq_set_mode_standard();
     gl_context_begin();
-	rdpq_mode_tlut(TLUT_RGBA16);
-	rdpq_tex_load_tlut(libdragon_palette, 0, 256);
 
 	// surface_t temp = surface_make_linear(vid.buffer, FMT_CI8, 320, 240);
 	// rdpq_tex_blit(&temp, 0, 0, NULL);
@@ -1009,6 +1009,7 @@ void SCR_UpdateScreen (void)
 		VID_Update (&vrect);
 	}
 
+    gl_context_end();
 #ifdef N64
 #if 1
 	calculate_framerate();
@@ -1022,8 +1023,6 @@ void SCR_UpdateScreen (void)
     graphics_draw_text(disp, 10, 10, memory_used_text);
     graphics_draw_text(disp, 319 - strlen(fpsText) * 9, 10, fpsText);
 #endif
-	glFlush();
-    gl_context_end();
 	rdpq_detach_show();
 #endif
 }

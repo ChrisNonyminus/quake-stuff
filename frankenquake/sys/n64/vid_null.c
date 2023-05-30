@@ -112,7 +112,7 @@ void VID_SetPalette(unsigned char *palette)
         colors[i].g = *palette++;
         colors[i].b = *palette++;
 
-		libdragon_palette[i] = color_to_packed16(RGBA32(colors[i].r, colors[i].g, colors[i].b, 0));
+		libdragon_palette[i] = color_to_packed16(RGBA32(colors[i].r, colors[i].g, colors[i].b, 255));
     }
 }
 
@@ -165,6 +165,7 @@ void GL_Init (void)
 //	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
     zbuffer = surface_alloc(FMT_RGBA16, display_get_width(), display_get_height());
+	
 }
 void VID_Init(unsigned char *palette)
 {
@@ -184,6 +185,8 @@ void VID_Init(unsigned char *palette)
 	vid.numpages = 2;
     GL_Init();
 	vid.recalc_refdef = 1;				// force a surface cache flush
+
+	VID_SetPalette(palette);
 	
 }
 

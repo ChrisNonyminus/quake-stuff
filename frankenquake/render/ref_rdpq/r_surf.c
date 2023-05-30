@@ -185,6 +185,21 @@ void BuildSurfaceDisplayList (msurface_t *fa)
 DrawGLPoly
 ================
 */
+void debug_draw_quad()
+{
+    glBegin(GL_TRIANGLE_STRIP);
+        glNormal3f(0, 1, 0);
+        glTexCoord2f(0, 0);
+        glVertex3f(-0.5f, 0, -0.5f);
+        glTexCoord2f(0, 1);
+        glVertex3f(-0.5f, 0, 0.5f);
+        glTexCoord2f(1, 0);
+        glVertex3f(0.5f, 0, -0.5f);
+        glTexCoord2f(1, 1);
+        glVertex3f(0.5f, 0, 0.5f);
+    glEnd();
+}
+static texture_t* current_polytex;
 void DrawGLPoly (glpoly_t *p)
 {
 	int		i;
@@ -195,7 +210,9 @@ void DrawGLPoly (glpoly_t *p)
 	for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
 	{
 		glTexCoord2f (v[3], v[4]);
-		glVertex3fv (v);
+		vec3_t normalized = {v[0], v[1], v[2]};
+		//VectorNormalize((vec_t*)&normalized);
+		glVertex3f(normalized[0], normalized[1], normalized[2]);
 	}
 	glEnd ();
 }
@@ -205,6 +222,7 @@ void DrawGLPoly (glpoly_t *p)
 R_RenderBrushPoly
 ================
 */
+void GL_Bind (int texnum);
 void R_RenderBrushPoly (msurface_t *fa)
 {
 	texture_t	*t;
@@ -225,8 +243,9 @@ void R_RenderBrushPoly (msurface_t *fa)
 	// 	return;
 	// }
 		
-	// t = R_TextureAnimation (fa->texinfo->texture);
-	// GL_Bind (t->gl_texturenum);
+	t = R_TextureAnimation (fa->texinfo->texture);
+	GL_Bind (t->gl_texturenum);
+	current_polytex = t;
 
 	// if (fa->flags & SURF_DRAWTURB)
 	// {	// warp texture, no lightmaps

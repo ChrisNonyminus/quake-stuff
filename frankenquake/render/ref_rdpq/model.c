@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "quakedef.h"
 #include "r_local.h"
 
+extern int texture_extension_number;
 model_t *loadmodel;
 char loadname[32]; // for hunk tags
 
@@ -59,27 +60,33 @@ cvar_t mdl_aliastexscale = {"mdl_aliastexscale", "1", true};
 // New cvar to load only a specific number of textures (if not playing demos):
 cvar_t mdl_numtex = {"mdl_numtex", "5", true};
 // <<< FIX
-
+extern uint16_t libdragon_palette[256];
 /*
 ================
 GL_ResampleTexture
 ================
 */
-void GL_ResampleTexture (byte *in, int inwidth, int inheight, byte *out,  int outwidth, int outheight)
+void GL_ResampleTexture (byte *in, int inwidth, int inheight, uint16_t *out,  int outwidth, int outheight)
 {
 	int		i, j;
 	byte	*inrow;
 	unsigned	frac, fracstep;
 
 	fracstep = inwidth*0x10000/outwidth;
-	for (i=0 ; i<outheight ; i++, out += outwidth)
+	for (i=0 ; i<outheight; i++, out += outwidth)
 	{
 		inrow = in + inwidth*(i*inheight/outheight);
 		frac = fracstep >> 1;
-		for (j=0 ; j<outwidth ; j+=1)
+		for (j=0 ; j<outwidth; j+=4)
 		{
-			out[j] = inrow[frac>>16];
-			frac += fracstep;
+            out[j] = libdragon_palette[inrow[frac>>16]];
+            frac += fracstep;
+            out[j+1] = libdragon_palette[inrow[frac>>16]];
+            frac += fracstep;
+            out[j+2] = libdragon_palette[inrow[frac>>16]];
+            frac += fracstep;
+            out[j+3] = libdragon_palette[inrow[frac>>16]];
+            frac += fracstep;
 		}
 	}
 }
@@ -443,6 +450,82 @@ model_t *Mod_ForName(char *name, qboolean crash)
 byte *mod_base;
 
 extern int integer_to_pow2(int);
+typedef struct
+{
+	int		texnum;
+	char	identifier[64];
+	int		width, height;
+	qboolean	mipmap;
+} gltexture_t;
+
+#define	MAX_GLTEXTURES	1024
+gltexture_t	gltextures[MAX_GLTEXTURES];
+int			numgltextures;
+int			currenttexture = -1;		// to avoid unnecessary texture sets
+
+
+void GL_Bind (int texnum)
+{
+	if (currenttexture == texnum)
+		return;
+	currenttexture = texnum;
+	glBindTexture(GL_TEXTURE_2D, texnum);
+}
+
+
+/*
+================
+GL_LoadTexture
+================
+*/
+int GL_LoadTexture (char *identifier, int width, int height, byte *data, qboolean mipmap, qboolean alpha)
+{
+	qboolean	noalpha;
+	int			i, p, s;
+	gltexture_t	*glt;
+
+	// see if the texture is allready present
+	if (identifier[0])
+	{
+		for (i=0, glt=gltextures ; i<numgltextures ; i++, glt++)
+		{
+			if (!strcmp (identifier, glt->identifier))
+			{
+				if (width != glt->width || height != glt->height)
+					Sys_Error ("GL_LoadTexture: cache mismatch");
+				return gltextures[i].texnum;
+			}
+		}
+	}
+	else {
+		glt = &gltextures[numgltextures];
+		numgltextures++;
+	}
+
+	strcpy (glt->identifier, identifier);
+	glGenTextures(1, (GLuint*)&glt->texnum);
+	glt->width = width;
+	glt->height = height;
+	glt->mipmap = mipmap;
+
+    #if 0
+    GLenum min_filter = GL_LINEAR_MIPMAP_LINEAR;
+    #else
+    GLenum min_filter = GL_LINEAR;
+    #endif
+
+
+	GL_Bind(glt->texnum );
+    surface_t tex = surface_make_linear(data, FMT_RGBA16, width, height);
+	glTexImageN64(GL_TEXTURE_2D, 0, &tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, min_filter);
+
+
+	return glt->texnum;
+}
 /*
 =================
 Mod_LoadTextures
@@ -534,42 +617,42 @@ void Mod_LoadTextures(lump_t *l, filepartdata_t *fpdata)
 
             if ((mt->width & 15) || (mt->height & 15))
                 Sys_Error("Texture %s is not 16 aligned", mt->name);
-            {
-                pixels = mt->width * mt->height / 64 * 85;
-                tx = Hunk_AllocName(sizeof(texture_t) + pixels, loadname);
-                loadmodel->textures[i] = tx;
+            pixels = mt->width * mt->height / 64 * 85;
+            tx = Hunk_AllocName(sizeof(texture_t) + pixels, loadname);
+            loadmodel->textures[i] = tx;
 
-                memcpy(tx->name, mt->name, sizeof(tx->name));
-                tx->width = mt->width;
-                tx->height = mt->height;
-                for (j = 0; j < MIPLEVELS; j++)
-                    tx->offsets[j] =
-                        mt->offsets[j] + sizeof(texture_t) - sizeof(miptex_t);
-                // the pixels immediately follow the structures
-                memcpy(tx + 1, mt + 1, pixels);
-                if (tx->height > 32) {
-                    tx->rwidth = integer_to_pow2(((double)tx->width / ((double)tx->height / 32.0)));
-                    if (tx->rwidth != 8 && tx->rwidth < 8)
-                        tx->rwidth = 8;
-                    else if (tx->rwidth != 16 && tx->rwidth < 16)
-                        tx->rwidth = 16;
-                    else if (tx->rwidth != 32 && tx->rwidth < 32)
-                        tx->rwidth = 32;
-                    tx->resampled = Hunk_AllocName( tx->rwidth* 32, loadname);
-			        GL_ResampleTexture((byte*)(tx + 1), tx->width, tx->height, tx->resampled, tx->rwidth  , 32);
+            memcpy(tx->name, mt->name, sizeof(tx->name));
+            tx->width = mt->width;
+            tx->height = mt->height;
+            for (j = 0; j < MIPLEVELS; j++)
+                tx->offsets[j] =
+                    mt->offsets[j] + sizeof(texture_t) - sizeof(miptex_t);
+            // the pixels immediately follow the structures
+            memcpy(tx + 1, mt + 1, pixels);
+            if (tx->height > 16) {
+                tx->rwidth = integer_to_pow2(((double)tx->width / ((double)tx->height / 16.0)));
+                if (tx->rwidth != 8 && tx->rwidth < 8)
+                    tx->rwidth = 8;
+                else if (tx->rwidth != 16 && tx->rwidth < 16)
+                    tx->rwidth = 16;
+                tx->resampled = Hunk_AllocName( tx->rwidth* 16 * 2, loadname);
+                GL_ResampleTexture((byte*)(tx + tx->offsets[0]), tx->width, tx->height, tx->resampled, tx->rwidth  , 16);
 
-                    tx->rheight = 32;
-                    tx->rscale = ((double)tx->height / 32.0);
-                }else {
-                    tx->resampled = Hunk_AllocName(integer_to_pow2(tx->width) * integer_to_pow2(tx->height), loadname);
-                    tx->rwidth = integer_to_pow2(tx->width) ; tx->rheight = integer_to_pow2(tx->height);
-                    GL_ResampleTexture((byte*)(tx + 1), tx->width, tx->height, tx->resampled, tx->rwidth, tx->rheight);
-                    tx->rscale = 0;
-                }
+                tx->rheight = 16;
+                tx->rscale = ((double)tx->height / 16.0);
+            }else {
+                tx->resampled = Hunk_AllocName(integer_to_pow2(tx->width) * integer_to_pow2(tx->height) * 2, loadname);
+                tx->rwidth = integer_to_pow2(tx->width) ; tx->rheight = integer_to_pow2(tx->height);
+                GL_ResampleTexture((byte*)(tx + tx->offsets[0]), tx->width, tx->height, tx->resampled, tx->rwidth, tx->rheight);
+                tx->rscale = 0;
             }
             // <<< FIX
             if (!Q_strncmp(mt->name, "sky", 3))
                 R_InitSky(tx);
+            else
+            {
+                tx->gl_texturenum = GL_LoadTexture (mt->name, tx->rwidth, tx->rheight, (byte*)tx->resampled, true, false);
+            }
             // >>> FIX: For Nintendo DS using devkitARM
             // Loading only the required textures (based on the new cvar), part
             // 2:

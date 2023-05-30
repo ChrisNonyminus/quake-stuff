@@ -484,6 +484,8 @@ void DrawTextureChains (void)
 	// 	return;
 	// } 
 
+		rdpq_mode_zbuf(true, true);
+    		rdpq_mode_combiner(RDPQ_COMBINER_TEX);
 	for (i=0 ; i<cl.worldmodel->numtextures ; i++)
 	{
 		t = cl.worldmodel->textures[i];
@@ -502,22 +504,20 @@ void DrawTextureChains (void)
 		// 	continue;
 		// }
 		// else
-		rdpq_mode_zbuf(true, true);
 		{
 
 			// if ((s->flags & SURF_DRAWTURB) && r_wateralpha.value != 1.0)
 			// 	continue;	// draw translucent water later
 			
-			surface_t tex =surface_make_linear(t->resampled, FMT_CI8, t->rwidth, t->rheight);
-			rdpq_tex_load(TILE0, &tex, &(rdpq_texparms_t){ 
-				.s.repeats=REPEAT_INFINITE, .t.repeats = REPEAT_INFINITE, .s.scale_log = t->rscale, .t.scale_log = t->rscale
-			});
-    		rdpq_mode_combiner(RDPQ_COMBINER_TEX);
+			// surface_t tex =surface_make_linear(t->resampled, FMT_CI8, t->rwidth, t->rheight);
+			// rdpq_tex_load(TILE0, &tex, &(rdpq_texparms_t){ 
+			// 	.s.repeats=REPEAT_INFINITE, .t.repeats = REPEAT_INFINITE, .s.scale_log = 2, .t.scale_log = 2
+			// });
     		//rspq_wait();
 
 			for ( ; s ; s=s->texturechain) {
 
-				R_RenderPoly(s, 15);
+				R_RenderBrushPoly(s);
 				//rspq_wait();
 			}
 		}

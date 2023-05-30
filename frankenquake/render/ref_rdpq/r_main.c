@@ -930,7 +930,7 @@ void R_EdgeDrawing (void)
 		db_time1 = rw_time2;
 	}
 
-	R_DrawBEntitiesOnList ();
+	//R_DrawBEntitiesOnList ();
 
 	if (r_dspeeds.value)
 	{
@@ -945,8 +945,8 @@ void R_EdgeDrawing (void)
 		VID_LockBuffer ();
 	}
 	
-	if (!(r_drawpolys | r_drawculledpolys))
-		R_ScanEdges ();
+	// if (!(r_drawpolys | r_drawculledpolys))
+	// 	R_ScanEdges ();
 }
 
 
@@ -1021,7 +1021,7 @@ SetVisibilityByPassages ();
 		dp_time1 = Sys_FloatTime ();
 	}
 
-	R_DrawParticles ();
+	//R_DrawParticles ();
 
 	if (r_dspeeds.value)
 		dp_time2 = Sys_FloatTime ();

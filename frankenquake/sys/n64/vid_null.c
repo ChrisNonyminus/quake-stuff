@@ -128,7 +128,7 @@ void GL_Init (void)
 {
     rdpq_init();
     rdpq_debug_start();
-    rdpq_debug_log(true);
+    //rdpq_debug_log(true);
     gl_init();
 
 	gl_vendor = (const char*)glGetString (GL_VENDOR);
@@ -184,6 +184,7 @@ void VID_Init(unsigned char *palette)
 	vid.numpages = 2;
     GL_Init();
 	vid.recalc_refdef = 1;				// force a surface cache flush
+	
 }
 
 void VID_Shutdown(void)

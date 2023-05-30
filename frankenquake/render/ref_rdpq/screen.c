@@ -889,7 +889,8 @@ void SCR_UpdateScreen (void)
 
     surface_t *disp = display_get();
     rdpq_attach_clear(disp, &zbuffer);
-	vid.conbuffer = vid.buffer = disp->buffer;
+	static byte fb[320 * 240];
+	vid.conbuffer = vid.buffer = (byte*)fb;
 	rdpq_set_mode_standard();
     gl_context_begin();
 	rdpq_mode_tlut(TLUT_RGBA16);

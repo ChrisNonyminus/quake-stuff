@@ -443,11 +443,30 @@ void R_DrawSubmodelPolygons (model_t *pmodel, int clipflags)
 
 void R_RenderBrushPoly(msurface_t* fa);
 
+
+
+
+
+
 /*
 ================
 DrawTextureChains
 ================
 */
+
+static inline int NextPow2(int v) {
+	v--;
+	v |= v >> 1;
+	v |= v >> 2;
+	v |= v >> 4;
+	v |= v >> 8;
+	v |= v >> 16;
+	v++;
+	return v;
+}
+
+extern int integer_to_pow2(int);
+
 void DrawTextureChains (void)
 {
 	int		i;
@@ -483,17 +502,24 @@ void DrawTextureChains (void)
 		// 	continue;
 		// }
 		// else
+		rdpq_mode_zbuf(true, true);
 		{
 
 			// if ((s->flags & SURF_DRAWTURB) && r_wateralpha.value != 1.0)
 			// 	continue;	// draw translucent water later
-			surface_t tex = surface_make_linear(((byte*)t + t->offsets[3]), FMT_CI8, t->width >> 3, t->height >>3 );
-			glEnable(GL_RDPQ_TEXTURING_N64);
-			rdpq_tex_load(TILE0, &tex, NULL);
+			
+			surface_t tex =surface_make_linear(t->resampled, FMT_CI8, t->rwidth, t->rheight);
+			rdpq_tex_load(TILE0, &tex, &(rdpq_texparms_t){ 
+				.s.repeats=REPEAT_INFINITE, .t.repeats = REPEAT_INFINITE, .s.scale_log = t->rscale, .t.scale_log = t->rscale
+			});
+    		rdpq_mode_combiner(RDPQ_COMBINER_TEX);
+    		//rspq_wait();
 
-			for ( ; s ; s=s->texturechain)
-				R_RenderBrushPoly (s);
-			glDisable(GL_RDPQ_TEXTURING_N64);
+			for ( ; s ; s=s->texturechain) {
+
+				R_RenderPoly(s, 15);
+				//rspq_wait();
+			}
 		}
 
 		t->texturechain = NULL;

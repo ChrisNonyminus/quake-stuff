@@ -61,6 +61,30 @@ cvar_t mdl_numtex = {"mdl_numtex", "5", true};
 // <<< FIX
 
 /*
+================
+GL_ResampleTexture
+================
+*/
+void GL_ResampleTexture (byte *in, int inwidth, int inheight, byte *out,  int outwidth, int outheight)
+{
+	int		i, j;
+	byte	*inrow;
+	unsigned	frac, fracstep;
+
+	fracstep = inwidth*0x10000/outwidth;
+	for (i=0 ; i<outheight ; i++, out += outwidth)
+	{
+		inrow = in + inwidth*(i*inheight/outheight);
+		frac = fracstep >> 1;
+		for (j=0 ; j<outwidth ; j+=1)
+		{
+			out[j] = inrow[frac>>16];
+			frac += fracstep;
+		}
+	}
+}
+
+/*
 ===============
 Mod_Init
 ===============
@@ -418,6 +442,7 @@ model_t *Mod_ForName(char *name, qboolean crash)
 
 byte *mod_base;
 
+extern int integer_to_pow2(int);
 /*
 =================
 Mod_LoadTextures
@@ -509,12 +534,7 @@ void Mod_LoadTextures(lump_t *l, filepartdata_t *fpdata)
 
             if ((mt->width & 15) || (mt->height & 15))
                 Sys_Error("Texture %s is not 16 aligned", mt->name);
-            // >>> FIX: For Nintendo DS using devkitARM
-            // Resampling texture based on new cvars (part 1):
-            if (((int)(mdl_brushtexscale.value) == 1) ||
-                (!Q_strncmp(mt->name, "sky", 3)))
             {
-                // <<< FIX
                 pixels = mt->width * mt->height / 64 * 85;
                 tx = Hunk_AllocName(sizeof(texture_t) + pixels, loadname);
                 loadmodel->textures[i] = tx;
@@ -527,24 +547,26 @@ void Mod_LoadTextures(lump_t *l, filepartdata_t *fpdata)
                         mt->offsets[j] + sizeof(texture_t) - sizeof(miptex_t);
                 // the pixels immediately follow the structures
                 memcpy(tx + 1, mt + 1, pixels);
-                // >>> FIX: For Nintendo DS using devkitARM
-                // Resampling texture based on new cvars (part 2):
+                if (tx->height > 32) {
+                    tx->rwidth = integer_to_pow2(((double)tx->width / ((double)tx->height / 32.0)));
+                    if (tx->rwidth != 8 && tx->rwidth < 8)
+                        tx->rwidth = 8;
+                    else if (tx->rwidth != 16 && tx->rwidth < 16)
+                        tx->rwidth = 16;
+                    else if (tx->rwidth != 32 && tx->rwidth < 32)
+                        tx->rwidth = 32;
+                    tx->resampled = Hunk_AllocName( tx->rwidth* 32, loadname);
+			        GL_ResampleTexture((byte*)(tx + 1), tx->width, tx->height, tx->resampled, tx->rwidth  , 32);
+
+                    tx->rheight = 32;
+                    tx->rscale = ((double)tx->height / 32.0);
+                }else {
+                    tx->resampled = Hunk_AllocName(integer_to_pow2(tx->width) * integer_to_pow2(tx->height), loadname);
+                    tx->rwidth = integer_to_pow2(tx->width) ; tx->rheight = integer_to_pow2(tx->height);
+                    GL_ResampleTexture((byte*)(tx + 1), tx->width, tx->height, tx->resampled, tx->rwidth, tx->rheight);
+                    tx->rscale = 0;
+                }
             }
-            else
-            {
-                pixels = mt->width * mt->height / 64 * 85;
-                tx = Hunk_AllocName(sizeof(texture_t) + pixels, loadname);
-                loadmodel->textures[i] = tx;
-
-                memcpy(tx->name, mt->name, sizeof(tx->name));
-                tx->width = mt->width;
-                tx->height = mt->height;
-                for (j = 0; j < MIPLEVELS; j++)
-                    tx->offsets[j] =
-                        mt->offsets[j] + sizeof(texture_t) - sizeof(miptex_t);
-                // the pixels immediately follow the structures
-                memcpy(tx + 1, mt + 1, pixels);
-            };
             // <<< FIX
             if (!Q_strncmp(mt->name, "sky", 3))
                 R_InitSky(tx);

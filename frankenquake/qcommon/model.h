@@ -75,6 +75,10 @@ typedef struct texture_s
 	struct texture_s *alternate_anims;	// bmodels in frmae 1 use these
 	unsigned	offsets[MIPLEVELS];		// four mip maps stored
 	struct	msurface_s	*texturechain;
+	byte* resampled;
+	unsigned rwidth;
+	unsigned rheight;
+	int rscale;
 } texture_t;
 
 

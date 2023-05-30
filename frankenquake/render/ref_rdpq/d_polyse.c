@@ -128,7 +128,7 @@ D_PolysetDraw
 */
 void D_PolysetDraw (void)
 {
-#if 1
+#if 0
 	spanpackage_t	spans[DPS_MAXSPANS + 1 +
 			((CACHE_SIZE - 1) / sizeof(spanpackage_t)) + 1];
 						// one extra because of cache line pretouching

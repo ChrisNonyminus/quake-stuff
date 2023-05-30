@@ -458,7 +458,7 @@ int main(int argc, char **argv)
     static quakeparms_t parms;
     double time, oldtime, newtime;
 
-#define PROFILE_OFF
+//#define PROFILE_OFF
 #ifndef PROFILE_OFF // be sure to set PROFILE_OFF if you don't have a usb logger on real hardware!
     debug_init(DEBUG_FEATURE_ALL);
     console_init();

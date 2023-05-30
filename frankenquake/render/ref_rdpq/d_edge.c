@@ -47,23 +47,18 @@ D_DrawPoly
 
 ==============
 */
+
 void D_DrawPoly(void)
 {
-#if 1
+#if 0
 // this driver takes spans, not polygons
 #else
-int i = 0;
-    // surface_t tex = surface_alloc(FMT_CI8, r_polydesc.pcurrentface->)
-    // rdpq_tex_load(TILE0,) // TODO
-    rdpq_set_mode_standard();
-		rdpq_mode_zbuf(true, true);
-    rdpq_mode_combiner(RDPQ_COMBINER_FLAT);
-    rdpq_set_prim_color(RGBA32((r_polydesc.pverts[0].u / 320) * 255, (r_polydesc.pverts[1].u / 320) * 255, (r_polydesc.pverts[2].u / 320) * 255, 255));
+    int i;
     for (i = 1; i + 1 < r_polydesc.numverts; i++) {
-		rdpq_triangle(&TRIFMT_ZBUF,
-                  (float[]){r_polydesc.pverts[0].u, r_polydesc.pverts[0].v, 1.0f - r_polydesc.pverts[0].zi},
-                  (float[]){r_polydesc.pverts[i].u, r_polydesc.pverts[i].v, 1.0f - r_polydesc.pverts[i].zi},
-                  (float[]){r_polydesc.pverts[i+1].u, r_polydesc.pverts[i+1].v, 1.0f - r_polydesc.pverts[i+1].zi});
+		rdpq_triangle(&TRIFMT_ZBUF_TEX,
+                  (float[]){r_polydesc.pverts[0].u, r_polydesc.pverts[0].v, 1.0f - r_polydesc.pverts[0].zi, r_polydesc.pverts[0].s, r_polydesc.pverts[0].t, 1},
+                  (float[]){r_polydesc.pverts[i].u, r_polydesc.pverts[i].v, 1.0f - r_polydesc.pverts[i].zi, r_polydesc.pverts[i].s, r_polydesc.pverts[i].t, 1},
+                  (float[]){r_polydesc.pverts[i+1].u, r_polydesc.pverts[i+1].v, 1.0f - r_polydesc.pverts[i+1].zi, r_polydesc.pverts[i+1].s, r_polydesc.pverts[i+1].t, 1});
 	}
 
 #endif

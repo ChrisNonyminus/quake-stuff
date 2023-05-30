@@ -98,7 +98,7 @@ void D_ViewChanged (void)
 		for (i=0 ; i<vid.height; i++)
 		{
 			d_scantable[i] = i*rowbytes;
-			zspantable[i] = d_pzbuffer + i*d_zwidth;
+			//zspantable[i] = d_pzbuffer + i*d_zwidth;
 		}
 	}
 

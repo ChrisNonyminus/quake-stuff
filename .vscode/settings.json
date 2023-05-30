@@ -16,6 +16,21 @@
         "unordered_set": "c",
         "vector": "c",
         "string_view": "c",
-        "initializer_list": "c"
+        "initializer_list": "c",
+        "QLUMPY.C": "cpp",
+        "MODELGEN.C": "cpp",
+        "QCC.C": "cpp",
+        "TJUNC.C": "cpp",
+        "SURFACES.C": "cpp",
+        "CSG4.C": "cpp",
+        "BRUSH.C": "cpp",
+        "MAP.C": "cpp",
+        "MERGE.C": "cpp",
+        "NODRAW.C": "cpp",
+        "REGION.C": "cpp",
+        "SOLIDBSP.C": "cpp",
+        "TEXMAKE.C": "cpp",
+        "VIS.C": "cpp",
+        "SPRGEN.C": "cpp"
     }
 }

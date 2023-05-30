@@ -61,7 +61,7 @@ void D_Init (void)
 	r_drawpolys = false;
 #endif
 	r_worldpolysbacktofront = false;
-	r_recursiveaffinetriangles = true;
+	r_recursiveaffinetriangles = false;
 	r_pixbytes = 2;
 	r_aliasuvscale = 1.0;
 }

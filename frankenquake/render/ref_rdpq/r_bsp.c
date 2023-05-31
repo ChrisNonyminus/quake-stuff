@@ -699,12 +699,15 @@ void R_RenderWorld (void)
 	model_t		*clmodel;
 	btofpoly_t	btofpolys[MAX_BTOFPOLYS];
 
+	extern int currenttexture;
 	pbtofpolys = btofpolys;
 
 	currententity = &cl_entities[0];
 	VectorCopy (r_origin, modelorg);
 	clmodel = currententity->model;
 	r_pcurrentvertbase = clmodel->vertexes;
+	currenttexture = -1;
+    glColor3f(1, 1, 1);
 
 	R_RecursiveWorldNode (clmodel->nodes, 15);
 

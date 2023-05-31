@@ -58,7 +58,7 @@ cvar_t mdl_aliastexscale = {"mdl_aliastexscale", "1", true};
 
 // >>> FIX: For Nintendo DS using devkitARM
 // New cvar to load only a specific number of textures (if not playing demos):
-cvar_t mdl_numtex = {"mdl_numtex", "256", true};
+cvar_t mdl_numtex = {"mdl_numtex", "0", true};
 // <<< FIX
 extern uint16_t libdragon_palette[256];
 /*
@@ -476,11 +476,7 @@ void GL_Bind (int texnum, byte* data, int width, int height)
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        for (uint32_t i = 0; i < 7; i++)
-        {
-
-            glTexImageN64(GL_TEXTURE_2D, i, &tex);
-        }
+        glTexImageN64(GL_TEXTURE_2D, 0, &tex);
 }
 
 
@@ -628,22 +624,18 @@ void Mod_LoadTextures(lump_t *l, filepartdata_t *fpdata)
                     mt->offsets[j] + sizeof(texture_t) - sizeof(miptex_t);
             // the pixels immediately follow the structures
             memcpy(tx + 1, mt + 1, pixels);
-            if (tx->height > 16) {
-                tx->rwidth = (((double)tx->width / ((double)tx->height / 16.0)));
-                if (tx->rwidth != 8 && tx->rwidth < 8)
-                    tx->rwidth = 8;
-                else if (tx->rwidth != 16 && tx->rwidth < 16)
-                    tx->rwidth = 16;
-                tx->resampled = Hunk_AllocName( tx->rwidth* 16 * 2, loadname);
-                GL_ResampleTexture((byte*)(tx + tx->offsets[0]), tx->width, tx->height, tx->resampled, tx->rwidth  , 16);
+            if (true) {
+                tx->rwidth = tx->width;
+                tx->rheight = tx->height;
+                tx->rscale = 1;
+                while ((tx->rheight > 32) || (tx->rwidth > 32)) {
+                    tx->rheight /= 2;
+                    tx->rwidth /= 2;
+                    tx->rscale *= 2;
+                }
+                tx->resampled = Hunk_AllocName( tx->rwidth* tx->rheight * 2, loadname);
+                GL_ResampleTexture((byte*)(tx + tx->offsets[0]), tx->width, tx->height, tx->resampled, tx->rwidth  , tx->rheight);
 
-                tx->rheight = 16;
-                tx->rscale = ((double)tx->height / 16.0);
-            }else {
-                tx->resampled = Hunk_AllocName((tx->width) * (tx->height) * 2, loadname);
-                tx->rwidth = (tx->width) ; tx->rheight = (tx->height);
-                GL_ResampleTexture((byte*)(tx + tx->offsets[0]), tx->width, tx->height, tx->resampled, tx->rwidth, tx->rheight);
-                tx->rscale = 0;
             }
             // <<< FIX
             if (!Q_strncmp(mt->name, "sky", 3))

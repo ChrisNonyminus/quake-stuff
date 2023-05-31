@@ -209,7 +209,7 @@ void DrawGLPoly (glpoly_t *p)
 	v = p->verts[0];
 	for (i=0 ; i<p->numverts ; i++, v+= VERTEXSIZE)
 	{
-		glTexCoord2f (v[3], v[4]);
+		glTexCoord2f (v[3] / (current_polytex->rscale), v[4] / (current_polytex->rscale));
 		vec3_t normalized = {v[0], v[1], v[2]};
 		//VectorNormalize((vec_t*)&normalized);
 		glVertex3f(normalized[0], normalized[1], normalized[2]);
